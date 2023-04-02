@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "obridge-chain-client-evm.fullname" . }}-{{ .Values.evm.system_chain_id }}
+  labels:
+    app: {{ include "obridge-chain-client-evm.fullname" . }}-{{ .Values.evm.system_chain_id }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "obridge-chain-client-evm.fullname" . }}-{{ .Values.evm.system_chain_id }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "obridge-chain-client-evm.fullname" . }}-{{ .Values.evm.system_chain_id }}
+    spec:
+      containers:
+      - name: {{ include "obridge-chain-client-evm.fullname" . }}-{{ .Values.evm.system_chain_id }}
+        image: {{ .Values.image.name }}
+        ports:
+          - containerPort: 9100
+        env:
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.redis.password_key }}
+                key: redis-password
+          - name: EVM_CLIENT_PORT
+            value: "9100"
+          - name: REDIS_HOST
+            value: "{{ .Values.redis.host }}"
+          - name: RPC_URL
+            value: "{{ .Values.evm.rpc.url }}"
+          - name: CONTRACT_ADDRESS
+            value: "{{ .Values.evm.contract }}"
+          - name: SYSTEM_CHAIN_ID
+            value: "{{ .Values.evm.system_chain_id }}"
+          - name: CHAIN_ID
+            value: "{{ .Values.evm.chain_id }}"
+          - name: START_BLOCK
+            value: "{{ .Values.evm.start_block }}"
+

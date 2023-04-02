@@ -1,0 +1,21 @@
+
+domain:
+  name: 'obridge-api-relay.edge-dev.xyz'
+
+evm:
+  rpc:
+    url: 'https://blockchain2.byte-trade.com:31267/bsc-archive-testnet'
+  contract: '0x9D18cc6cFC0614e05AF80355aB836E2cF945a91C'
+  system_chain_id: '9006'
+  chain_id: '97'
+  start_block: '24231042'
+
+redis:
+  password_key: 'obridge-relay-db-redis'
+  host: 'obridge-relay-db-redis-master'
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  name: ''
