@@ -1,0 +1,21 @@
+{
+  "name": "evm-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@open-rpc/client-js": "^1.7.1",
+    "ethers": "^5.7.1",
+    "ioredis": "^5.2.3",
+    "koa": "^2.13.4",
+    "koa-bodyparser": "^4.3.0",
+    "koa-router": "^12.0.0",
+    "needle": "^3.1.0",
+    "web3-eth-abi": "^1.8.0"
+  }
+}
