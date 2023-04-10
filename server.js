@@ -41,7 +41,22 @@ class Server {
         this.wallet.setConfig(this.redis, this.evmRpcClient, Config.evm_config)
         this.transactionManager.setConfig(this.redis, this.wallet, this.evmRpcClient, Config.evm_config)
         
+        await this.setDefaultWatcher()
         this.startStatusSyncer()
+    }
+    setDefaultWatcher = async () => {
+        if (Config.relay_server_url.on_transfer_out != undefined && Config.relay_server_url.on_transfer_out != "") {
+            watchTransferOut(this.monitor, Config.relay_server_url.on_transfer_out)
+        }
+        if (Config.relay_server_url.on_transfer_in != undefined && Config.relay_server_url.on_transfer_in != "") {
+            watchTransferIn(this.monitor, Config.relay_server_url.on_transfer_in)
+        }
+        if (Config.relay_server_url.on_confirm != undefined && Config.relay_server_url.on_confirm != "") {
+            watchConfirm(this.monitor, Config.relay_server_url.on_confirm)
+        }
+        if (Config.relay_server_url.on_refunded != undefined && Config.relay_server_url.on_refunded != "") {
+            watchRefund(this.monitor, Config.relay_server_url.on_refunded)
+        }
     }
     startStatusSyncer = async () => {
         let statusRedis = new Redis({
