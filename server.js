@@ -14,6 +14,7 @@ const Redis = require('ioredis');
 
 //monitor
 const Monitor = require('./monitor/Monitor')
+const {watchTransferOut, watchTransferIn, watchConfirm, watchRefund} = require('./api/Utils')
 
 //wallet
 const Wallet = require('./wallet/Wallet')
