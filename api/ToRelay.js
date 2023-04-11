@@ -42,6 +42,27 @@ class RelayApi {
             hashlock
         } 
     }
+
+    getSystemFee = async (ctx, next) => {
+        let provider = new ethers.providers.JsonRpcProvider(ctx.config.evm_config.rpc_url)
+        let obridge = new ethers.Contract(ctx.config.evm_config.abi.obridge, this.evm_config.abi.obridge, provider)
+
+        try {
+            let base_points_rate = await obridge.basisPointsRate()
+
+            ctx.response.body = {
+                code: 200,
+                fee: base_points_rate
+            }
+        } catch (error) {
+            console.error(error)
+            ctx.response.body = {
+                code: 30206,
+                message: 'fetch base_points_rate error'
+            }
+        }
+
+    }
 }
 
 let relayApi = new RelayApi()
@@ -49,5 +70,6 @@ let relayApi = new RelayApi()
 const exports_obj = {}
 exports_obj[`POST /evm-client-${Config.evm_config.system_chain_id}/relay/register_relay`] = relayApi.registerRelay
 exports_obj[`POST /evm-client-${Config.evm_config.system_chain_id}/relay/get_hashlock`] = relayApi.getHashLock
+exports_obj[`POST /evm-client-${Config.evm_config.system_chain_id}/relay/get_system_fee`] = relayApi.getSystemFee
 
 module.exports = exports_obj
