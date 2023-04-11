@@ -52,7 +52,7 @@ class RelayApi {
 
             ctx.response.body = {
                 code: 200,
-                fee: base_points_rate
+                fee: base_points_rate.toNumber()
             }
         } catch (error) {
             console.error(error)
