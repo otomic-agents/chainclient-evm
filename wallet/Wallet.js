@@ -92,7 +92,7 @@ class Wallet {
         let endCount = 0
         balance_list.forEach(async balance => {
             if (balance.token == ethers.constants.AddressZero) {
-                balance.balance_value = this.provider.getBalance(balance.wallet_address)
+                balance.balance_value = await this.provider.getBalance(balance.wallet_address)
                 balance.decimals = 18
             } else {
 
