@@ -45,7 +45,7 @@ class RelayApi {
 
     getSystemFee = async (ctx, next) => {
         let provider = new ethers.providers.JsonRpcProvider(ctx.config.evm_config.rpc_url)
-        let obridge = new ethers.Contract(ctx.config.evm_config.abi.obridge, ctx.config.evm_config.abi.obridge, provider)
+        let obridge = new ethers.Contract(ctx.config.evm_config.contract_address, ctx.config.evm_config.abi.obridge, provider)
 
         try {
             let base_points_rate = await obridge.basisPointsRate()
