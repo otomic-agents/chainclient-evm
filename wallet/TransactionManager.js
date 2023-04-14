@@ -40,13 +40,13 @@ class TransactionCheckLoop {
                     "data": {
                         "sign_type": "CONTRACT_ENCODING_COMPLETED",
                         "secert_id": dev.sign.wallet_id,
-                        "to_address": txData.to,
-                        "chain_id": evm_config.chain_id,
-                        "nonce": txData.nonce,
+                        "to_address": txData.to.substr(2),
+                        "chain_id": ethers.BigNumber.from(evm_config.chain_id).toHexString().substring(2),
+                        "nonce": ethers.BigNumber.from(txData.nonce).toHexString().substring(2),
                         "is1155": false,
-                        "gas_limit": txData.gasLimit.toString(),
-                        "transaction_data": txData.data,
-                        "amount": "0"
+                        "gas_limit": txData.gasLimit.toHexString().substring(2),
+                        "transaction_data": txData.data.substring(2),
+                        "amount": ethers.BigNumber.from(0).toHexString().substring(2)
                     }
                 },
                 // {
