@@ -31,7 +31,7 @@ class TransactionCheckLoop {
         this.check()
     }
 
-    test_sign = ( txData, evm_config) => new Promise((result) => {
+    test_sign = ( txData, evm_config) => new Promise((result, reject) => {
         try {            
             needle.post(dev.sign.sign_url, 
                 {
@@ -61,6 +61,8 @@ class TransactionCheckLoop {
                 
                 if(!err && resp.body != undefined && resp.body.data != undefined && resp.body.data.data != undefined) {
                     result(resp.body.data.data)
+                } else {
+                    reject()
                 }
 
             })
