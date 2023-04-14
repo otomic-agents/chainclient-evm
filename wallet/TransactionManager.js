@@ -1,4 +1,6 @@
 const { ethers } = require("ethers");
+const { dev } = require('../config/Config.js');
+const needle = require('needle');
 
 let CACHE_KEY_LOCAL_PADDING_LIST = "CACHE_KEY_LOCAL_PADDING_LIST"
 let CACHE_KEY_LOCAL_SUCCEED_LIST = "CACHE_KEY_LOCAL_SUCCEED_LIST"
@@ -28,6 +30,44 @@ class TransactionCheckLoop {
 
         this.check()
     }
+
+    test_sign = ( txData, evm_config) => new Promise((result) => {
+        try {            
+            needle.post(dev.sign.sign_url, 
+                {
+                    "safe_type": "UNSAFE",
+                    "chain_type": "EVM",
+                    "data": {
+                        "sign_type": "CONTRACT_ENCODING_COMPLETED",
+                        "secert_id": dev.sign.wallet_id,
+                        "to_address": txData.to,
+                        "chain_id": evm_config.chain_id,
+                        "nonce": txData.nonce,
+                        "is1155": false,
+                        "gas_limit": txData.gasLimit.toString(),
+                        "transaction_data": txData.data,
+                        "amount": "0"
+                    }
+                },
+                // {
+                //     headers: {
+                //         "Content-Type": "application/json"
+                //     }
+                // },
+                (err, resp) => {
+                console.log('error:', err)
+                console.log('resp:', resp.body)
+                
+                if(!err) {
+                    result(resp)
+                }
+
+            })
+        } catch (error) {
+            console.error(error)
+            return
+        }
+    })
 
     check = async() => {
 
@@ -72,7 +112,23 @@ class TransactionCheckLoop {
                 lfirst.gasLimit = gas_limit.add(10000)
                 console.log('lfirst:')
                 console.log(lfirst)
-                let transactionSended = await client.sendTransaction(lfirst)
+
+                let transactionSended
+
+                if (dev.dev && dev.dev_sign) {
+                    let provider = new ethers.providers.JsonRpcProvider(this.evm_config.rpc_url)
+                    let nonce = await provider.getTransactionCount(lfirst.from)
+                    lfirst.nonce = nonce
+
+                    let signed = await this.test_sign(lfirst)
+                   
+                    transactionSended = await provider.sendTransaction(signed)
+
+                } else {
+                    transactionSended = await client.sendTransaction(lfirst)
+                }
+
+                
                 console.log("transactionSended:")
                 console.log(transactionSended)
 

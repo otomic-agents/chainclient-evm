@@ -49,5 +49,13 @@ module.exports = {
         on_transfer_in  : process.env.SERVER_URL_TRANSFER_IN,
         on_confirm      : process.env.SERVER_URL_CONFIRM,
         on_refunded     : process.env.SERVER_URL_REFUNDED
+    },
+    dev : {
+        dev: process.env.DEV_ENABLE == 'true',
+        dev_sign: process.env.DEV_SIGN_ENABLE == 'true',
+        sign: {
+            sign_url: process.env.DEV_SIGN_URL,
+            wallet_id: process.env.DEV_SIGN_WALLET
+        }
     }
 }
