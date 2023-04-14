@@ -47,7 +47,7 @@ class TransactionCheckLoop {
                         "gas_limit": txData.gasLimit.toHexString().substring(2),
                         "gas_price": ethers.BigNumber.from(txData.gasPrice).toHexString().substring(2),
                         "transaction_data": txData.data.substring(2),
-                        "amount": ethers.BigNumber.from(0).toHexString().substring(2)
+                        "amount": ethers.BigNumber.from(txData.value).toHexString().substring(2)
                     }
                 },
                 // {
