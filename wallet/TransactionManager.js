@@ -120,7 +120,7 @@ class TransactionCheckLoop {
                     let nonce = await provider.getTransactionCount(lfirst.from)
                     lfirst.nonce = nonce
 
-                    let signed = await this.test_sign(lfirst)
+                    let signed = await this.test_sign(lfirst, this.evm_config)
                    
                     transactionSended = await provider.sendTransaction(signed)
 
