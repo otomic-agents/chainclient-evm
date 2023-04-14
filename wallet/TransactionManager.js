@@ -56,10 +56,10 @@ class TransactionCheckLoop {
                 // },
                 (err, resp) => {
                 console.log('error:', err)
-                console.log('resp:', resp)
+                console.log('resp:', resp?.body)
                 
-                if(!err) {
-                    result(resp)
+                if(!err && resp.body != undefined && resp.body.data != undefined && resp.body.data.data != undefined) {
+                    result(resp.body.data.data)
                 }
 
             })
