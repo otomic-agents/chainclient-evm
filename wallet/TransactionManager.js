@@ -45,6 +45,7 @@ class TransactionCheckLoop {
                         "nonce": ethers.BigNumber.from(txData.nonce).toHexString().substring(2),
                         "is1155": false,
                         "gas_limit": txData.gasLimit.toHexString().substring(2),
+                        "gas_price": ethers.BigNumber.from(txData.gasPrice).toHexString().substring(2),
                         "transaction_data": txData.data.substring(2),
                         "amount": ethers.BigNumber.from(0).toHexString().substring(2)
                     }
