@@ -56,7 +56,7 @@ class TransactionCheckLoop {
                 // },
                 (err, resp) => {
                 console.log('error:', err)
-                console.log('resp:', resp.body)
+                console.log('resp:', resp)
                 
                 if(!err) {
                     result(resp)
