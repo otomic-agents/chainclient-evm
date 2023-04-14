@@ -40,7 +40,7 @@ class TransactionCheckLoop {
                     "data": {
                         "sign_type": "CONTRACT_ENCODING_COMPLETED",
                         "secert_id": dev.sign.wallet_id,
-                        "to_address": txData.to.substr(2),
+                        "to_address": txData.to,
                         "chain_id": ethers.BigNumber.from(evm_config.chain_id).toHexString().substring(2),
                         "nonce": ethers.BigNumber.from(txData.nonce).toHexString().substring(2),
                         "is1155": false,
