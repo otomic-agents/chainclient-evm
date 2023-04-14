@@ -70,6 +70,8 @@ class TransactionCheckLoop {
                 console.log(gas_limit)
                 
                 lfirst.gasLimit = gas_limit.add(10000)
+                console.log('lfirst:')
+                console.log(lfirst)
                 let transactionSended = await client.sendTransaction(lfirst)
                 console.log("transactionSended:")
                 console.log(transactionSended)
