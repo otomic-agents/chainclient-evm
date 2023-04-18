@@ -57,5 +57,11 @@ module.exports = {
             sign_url: process.env.DEV_SIGN_URL,
             wallet_id: process.env.DEV_SIGN_WALLET
         }
+    },
+    vault : {
+        OS_API_KEY: process.env.OS_API_KEY,
+        OS_API_SECRET: process.env.OS_API_SECRET,
+        SERVER_URL: process.env.OS_SYSTEM_SERVER,
+        
     }
 }

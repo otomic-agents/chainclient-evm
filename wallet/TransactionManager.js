@@ -1,6 +1,7 @@
 const { ethers } = require("ethers");
-const { dev } = require('../config/Config.js');
+const { dev, vault } = require('../config/Config.js');
 const needle = require('needle');
+const bcrypt = require('bcrypt')
 
 let CACHE_KEY_LOCAL_PADDING_LIST = "CACHE_KEY_LOCAL_PADDING_LIST"
 let CACHE_KEY_LOCAL_SUCCEED_LIST = "CACHE_KEY_LOCAL_SUCCEED_LIST"
@@ -30,6 +31,96 @@ class TransactionCheckLoop {
 
         this.check()
     }
+
+    vaultSign = (txData, evm_config, secert_id) => new Promise(async (result, reject) => {
+        
+        let timestamp = (new Date().getTime() / 1000).toFixed(0);
+        let text = vault.OS_API_KEY + timestamp + vault.OS_API_SECRET;
+        let token = await bcrypt.hash(text, 10);
+
+        let body = {
+            "app_key": vault.OS_API_KEY,
+            "timestamp": parseInt(timestamp),
+            "token": token,
+            "perm": {
+              "group": "secret.vault",
+              "dataType": "key",
+              "version": "v1",
+              "ops": ["Sign"]
+            }
+        }
+
+        let accessToken = () => new Promise((result, reject) => {
+            try {
+                needle.post(url, body,
+                    {
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    },
+                    (err, resp) => {
+                    console.log('error:', err)
+                    console.log('resp:', resp.body)
+                    
+                    if (err) {
+                        reject()
+                    } else {
+                        result(resp.body.data.access_token)
+                    }
+                    
+                })
+            } catch (error) {
+                console.error(error)
+                return
+            }
+        }) 
+
+        let sign = (txData, evm_config) => new Promise((result, reject) => {
+            try {            
+                needle.post(`http://${vault.SERVER_URL}/system-server/v1alpha1/key/secret.vault/v1/Sign` , 
+                    {
+                        "safe_type": "UNSAFE",
+                        "chain_type": "EVM",
+                        "data": {
+                            "sign_type": "CONTRACT_ENCODING_COMPLETED",
+                            "secert_id": secert_id,
+                            "to_address": txData.to,
+                            "chain_id": ethers.BigNumber.from(evm_config.chain_id).toHexString().substring(2),
+                            "nonce": ethers.BigNumber.from(txData.nonce).toHexString().substring(2),
+                            "is1155": false,
+                            "gas_limit": txData.gasLimit.toHexString().substring(2),
+                            "gas_price": ethers.BigNumber.from(txData.gasPrice).toHexString().substring(2),
+                            "transaction_data": txData.data.substring(2),
+                            "amount": ethers.BigNumber.from(txData.value).toHexString().substring(2)
+                        }
+                    },
+                    // {
+                    //     headers: {
+                    //         "Content-Type": "application/json"
+                    //     }
+                    // },
+                    (err, resp) => {
+                    console.log('error:', err)
+                    console.log('resp:', resp?.body)
+                    
+                    if(!err && resp.body != undefined && resp.body.data != undefined && resp.body.data.data != undefined) {
+                        result(resp.body.data.data)
+                    } else {
+                        reject()
+                    }
+    
+                })
+            } catch (error) {
+                console.error(error)
+                return
+            }
+        })
+
+        let at = await accessToken();
+        let resp = await sign(txData, evm_config);
+        result(resp)
+
+    })
 
     test_sign = ( txData, evm_config) => new Promise((result, reject) => {
         try {            
@@ -102,13 +193,12 @@ class TransactionCheckLoop {
             lfirst.gasPrice = gas_price
             //get limit
             let provider = new ethers.providers.JsonRpcProvider(this.evm_config.rpc_url)
-            let client = await this.wallet.getWallet(lfirst.from)
-            client = client.connect(provider)
+
 
             try {
                 lfirst.value = ethers.BigNumber.from(lfirst.value)
                 lfirst.gasLimit = 500000
-                let gas_limit = await client.estimateGas(lfirst)
+                let gas_limit = await provider.estimateGas(lfirst)
                 console.log("gas_limit:")
                 console.log(gas_limit)
                 
@@ -123,11 +213,16 @@ class TransactionCheckLoop {
                     let nonce = await provider.getTransactionCount(lfirst.from)
                     lfirst.nonce = nonce
 
-                    let signed = await this.test_sign(lfirst, this.evm_config)
+                    // let signed = await this.test_sign(lfirst, this.evm_config)
+
+                    let secert_id = await this.wallet.getWallet(lfirst.from)
+                    let signed = await this.vaultSign(lfirst, this.evm_config, secert_id)
                    
                     transactionSended = await provider.sendTransaction(signed)
 
                 } else {
+                    let client = await this.wallet.getWallet(lfirst.from)
+                    client = client.connect(provider)
                     transactionSended = await client.sendTransaction(lfirst)
                 }
 

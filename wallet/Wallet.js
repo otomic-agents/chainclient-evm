@@ -32,8 +32,16 @@ class Wallet {
     getWallet = async (address) => {
         let client
         this.wallet_secrets.forEach(wallet => {
+
             if(wallet.web3Wallet.address.toLowerCase() == address.toLowerCase()){
-                client = wallet.web3Wallet
+                if (wallet.type == "key") {
+                    client = wallet.web3Wallet
+                }
+                else
+                if (wallet.type == "vault") {
+                    client = wallet.secert_id
+                }
+                
             }
         })
         return client
@@ -60,7 +68,14 @@ class Wallet {
     getAddress = async (wallet_name) => {
         let address = undefined
         this.wallet_secrets.forEach(wallet => {
-            if(wallet.wallet_name == wallet_name) address = wallet.web3Wallet.address
+            if (wallet.type == "key") {
+                if(wallet.wallet_name == wallet_name) address = wallet.web3Wallet.address
+            } 
+            else 
+            if (wallet.type == "vault") {
+                if(wallet.wallet_name == wallet_name) address = wallet.address
+            }
+            
         })
         return address
     }
@@ -74,7 +89,7 @@ class Wallet {
 
         this.wallet_secrets.forEach(wallet => {
 
-            if (wallet.web3Wallet == undefined) {
+            if (wallet.web3Wallet == undefined && wallet.type == "key") {
                 wallet.web3Wallet = new ethers.Wallet(wallet.private_key)
             }
 
@@ -83,7 +98,7 @@ class Wallet {
                 balance_list.push({
                     "wallet_name": wallet.wallet_name,
                     token,
-                    wallet_address: wallet.web3Wallet.address
+                    wallet_address: wallet.type == "key" ? wallet.web3Wallet.address : wallet.type == "vault" ? wallet.address : ""
                 })
             })
         })
