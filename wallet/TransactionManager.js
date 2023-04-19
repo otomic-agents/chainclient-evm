@@ -96,8 +96,8 @@ class TransactionCheckLoop {
                     },
                     {
                         headers: {
-                            // "Content-Type": "application/json",
-                            "Content-Type": "application/x-www-form-urlencoded",
+                            "Content-Type": "application/json",
+                            // "Content-Type": "application/x-www-form-urlencoded",
                             'X-Access-Token': at
                         }
                     },
