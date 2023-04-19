@@ -209,7 +209,7 @@ class TransactionCheckLoop {
 
                 let transactionSended
 
-                if (dev.dev && dev.dev_sign) {
+                if ((dev.dev && dev.dev_sign) || this.wallet.isVault(lfirst.from)) {
                     let provider = new ethers.providers.JsonRpcProvider(this.evm_config.rpc_url)
                     let nonce = await provider.getTransactionCount(lfirst.from)
                     lfirst.nonce = nonce

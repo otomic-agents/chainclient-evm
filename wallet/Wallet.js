@@ -29,6 +29,22 @@ class Wallet {
         }
     }
 
+    isVault = async (address) => {
+        this.wallet_secrets.forEach(wallet => {
+            if (wallet.type == "key") {
+                if (wallet.web3Wallet.address.toLowerCase() == address.toLowerCase()) {
+                    return false
+                }
+            }
+            else 
+            if (wallet.type == "vault") {
+                if (wallet.address.toLowerCase() == address.toLowerCase()) {
+                    return true
+                }
+            }
+        })
+    }
+
     getWallet = async (address) => {
         let client
         this.wallet_secrets.forEach(wallet => {
