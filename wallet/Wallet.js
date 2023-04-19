@@ -33,15 +33,12 @@ class Wallet {
         let client
         this.wallet_secrets.forEach(wallet => {
 
-            if(wallet.web3Wallet.address.toLowerCase() == address.toLowerCase()){
-                if (wallet.type == "key") {
-                    client = wallet.web3Wallet
-                }
-                else
-                if (wallet.type == "vault") {
-                    client = wallet.secert_id
-                }
-                
+            if(wallet.type == "key" && wallet.web3Wallet.address.toLowerCase() == address.toLowerCase()){
+                client = wallet.web3Wallet
+            }
+            else
+            if (wallet.type == "vault" && wallet.address.toLowerCase() == address.toLowerCase()){
+                client = wallet.secert_id
             }
         })
         return client
