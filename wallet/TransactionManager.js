@@ -52,7 +52,7 @@ class TransactionCheckLoop {
 
         let accessToken = () => new Promise((result, reject) => {
             try {
-                needle.post(url, body,
+                needle.post(`http://${vault.SERVER_URL}/permission/v1alpha1/access`, body,
                     {
                         headers: {
                             "Content-Type": "application/json"
