@@ -96,7 +96,8 @@ class TransactionCheckLoop {
                     },
                     {
                         headers: {
-                            "Content-Type": "application/json",
+                            // "Content-Type": "application/json",
+                            "Content-Type": "application/x-www-form-urlencoded",
                             'X-Access-Token': at
                         }
                     },
@@ -104,8 +105,8 @@ class TransactionCheckLoop {
                     console.log('error:', err)
                     console.log('resp:', resp?.body)
                     
-                    if(!err && resp.body != undefined && resp.body.data != undefined && resp.body.data.data != undefined) {
-                        result(resp.body.data.data)
+                    if(!err && resp.body != undefined && resp.body.data != undefined && resp.body.data.data != undefined && resp.body.data.data.data != undefined) {
+                        result(resp.body.data.data.data)
                     } else {
                         reject()
                     }
