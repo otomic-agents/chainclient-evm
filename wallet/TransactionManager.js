@@ -75,7 +75,7 @@ class TransactionCheckLoop {
             }
         }) 
 
-        let sign = (txData, evm_config) => new Promise((result, reject) => {
+        let sign = (txData, at, evm_config) => new Promise((result, reject) => {
             try {            
                 needle.post(`http://${vault.SERVER_URL}/system-server/v1alpha1/key/secret.vault/v1/Sign` , 
                     {
@@ -94,11 +94,12 @@ class TransactionCheckLoop {
                             "amount": ethers.BigNumber.from(txData.value).toHexString().substring(2)
                         }
                     },
-                    // {
-                    //     headers: {
-                    //         "Content-Type": "application/json"
-                    //     }
-                    // },
+                    {
+                        headers: {
+                            "Content-Type": "application/json",
+                            'X-Access-Token': at
+                        }
+                    },
                     (err, resp) => {
                     console.log('error:', err)
                     console.log('resp:', resp?.body)
@@ -117,7 +118,7 @@ class TransactionCheckLoop {
         })
 
         let at = await accessToken();
-        let resp = await sign(txData, evm_config);
+        let resp = await sign(txData, at, evm_config);
         result(resp)
 
     })
