@@ -25,7 +25,7 @@ class Wallet {
             } catch (error) {
                 this.wallet_secrets = undefined
             }
-            
+
         }
     }
 
@@ -36,7 +36,7 @@ class Wallet {
                     return false
                 }
             }
-            else 
+            else
             if (wallet.type == "vault") {
                 if (wallet.address.toLowerCase() == address.toLowerCase()) {
                     return true
@@ -83,12 +83,12 @@ class Wallet {
         this.wallet_secrets.forEach(wallet => {
             if (wallet.type == "key") {
                 if(wallet.wallet_name == wallet_name) address = wallet.web3Wallet.address
-            } 
-            else 
+            }
+            else
             if (wallet.type == "vault") {
                 if(wallet.wallet_name == wallet_name) address = wallet.address
             }
-            
+
         })
         return address
     }
@@ -115,7 +115,7 @@ class Wallet {
                 })
             })
         })
-        
+
         let startCount = 0
         let endCount = 0
         balance_list.forEach(async balance => {
@@ -135,10 +135,11 @@ class Wallet {
                         balance.decimals = await this.token_map[balance.token].decimals()
                     }
                 } catch (error) {
+                    console.error(balance.wallet_address)
                     console.error("fetch balance error")
                     console.error(error)
                 }
-                
+
                 endCount++
             }
         })
