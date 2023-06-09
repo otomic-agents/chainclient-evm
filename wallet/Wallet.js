@@ -107,7 +107,7 @@ class Wallet {
             }
 
             wallet.token_list.forEach(token => {
-
+                console.log("$$$$",wallet.type,"|",wallet.web3Wallet["address"],"|",wallet.address,JSON.stringify(wallet))
                 balance_list.push({
                     "wallet_name": wallet.wallet_name,
                     token,
