@@ -135,7 +135,7 @@ class Wallet {
                         balance.decimals = await this.token_map[balance.token].decimals()
                     }
                 } catch (error) {
-                    console.error(balance.wallet_address)
+                    console.error("🟩",balance.wallet_address,balance)
                     console.error("fetch balance error")
                     console.error(error)
                 }
