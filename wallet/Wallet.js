@@ -101,13 +101,15 @@ class Wallet {
         console.log(this.wallet_secrets)
 
         this.wallet_secrets.forEach(wallet => {
-
+            if (!wallet.type){
+                console.warn("type field cannot be empty")
+                return
+            }
             if (wallet.web3Wallet == undefined && wallet.type == "key") {
                 wallet.web3Wallet = new ethers.Wallet(wallet.private_key)
             }
 
             wallet.token_list.forEach(token => {
-                console.log("$$$$",wallet.type,"|",wallet.web3Wallet["address"],"|",wallet.address,JSON.stringify(wallet))
                 balance_list.push({
                     "wallet_name": wallet.wallet_name,
                     token,
@@ -135,7 +137,6 @@ class Wallet {
                         balance.decimals = await this.token_map[balance.token].decimals()
                     }
                 } catch (error) {
-                    console.error("🟩",balance.wallet_address,balance)
                     console.error("fetch balance error")
                     console.error(error)
                 }
