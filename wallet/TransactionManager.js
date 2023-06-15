@@ -33,7 +33,7 @@ class TransactionCheckLoop {
     }
 
     vaultSign = (txData, evm_config, secert_id) => new Promise(async (result, reject) => {
-        
+
         let timestamp = (new Date().getTime() / 1000).toFixed(0);
         let text = vault.OS_API_KEY + timestamp + vault.OS_API_SECRET;
         let token = await bcrypt.hash(text, 10);
@@ -61,23 +61,23 @@ class TransactionCheckLoop {
                     (err, resp) => {
                     console.log('error:', err)
                     console.log('resp:', resp.body)
-                    
+
                     if (err) {
                         reject()
                     } else {
                         result(resp.body.data.access_token)
                     }
-                    
+
                 })
             } catch (error) {
                 console.error(error)
                 return
             }
-        }) 
+        })
 
         let sign = (txData, at, evm_config) => new Promise((result, reject) => {
-            try {            
-                needle.post(`http://${vault.SERVER_URL}/system-server/v1alpha1/key/secret.vault/v1/Sign` , 
+            try {
+                needle.post(`http://${vault.SERVER_URL}/system-server/v1alpha1/key/secret.vault/v1/Sign` ,
                     {
                         "safe_type": "UNSAFE",
                         "chain_type": "EVM",
@@ -104,13 +104,13 @@ class TransactionCheckLoop {
                     (err, resp) => {
                     console.log('error:', err)
                     console.log('resp:', resp?.body)
-                    
+
                     if(!err && resp.body != undefined && resp.body.data != undefined && resp.body.data.data != undefined && resp.body.data.data.data != undefined) {
                         result(resp.body.data.data.data)
                     } else {
                         reject()
                     }
-    
+
                 })
             } catch (error) {
                 console.error(error)
@@ -125,8 +125,8 @@ class TransactionCheckLoop {
     })
 
     test_sign = ( txData, evm_config) => new Promise((result, reject) => {
-        try {            
-            needle.post(dev.sign.sign_url, 
+        try {
+            needle.post(dev.sign.sign_url,
                 {
                     "safe_type": "UNSAFE",
                     "chain_type": "EVM",
@@ -151,7 +151,7 @@ class TransactionCheckLoop {
                 (err, resp) => {
                 console.log('error:', err)
                 console.log('resp:', resp?.body)
-                
+
                 if(!err && resp.body != undefined && resp.body.data != undefined && resp.body.data.data != undefined) {
                     result(resp.body.data.data)
                 } else {
@@ -183,7 +183,7 @@ class TransactionCheckLoop {
         console.log("lfirst:")
         console.log(lfirst)
 
-        lfirst.chainId = parseInt(lfirst.chainId)       
+        lfirst.chainId = parseInt(lfirst.chainId)
         //check tx state
         //switch send
         //or
@@ -203,7 +203,7 @@ class TransactionCheckLoop {
                 let gas_limit = await provider.estimateGas(lfirst)
                 console.log("gas_limit:")
                 console.log(gas_limit)
-                
+
                 lfirst.gasLimit = gas_limit.add(10000)
                 console.log('lfirst:')
                 console.log(lfirst)
@@ -211,6 +211,7 @@ class TransactionCheckLoop {
                 let transactionSended
 
                 if ((dev.dev && dev.dev_sign) || this.wallet.isVault(lfirst.from)) {
+                    console.log("Vault account Transaction")
                     let provider = new ethers.providers.JsonRpcProvider(this.evm_config.rpc_url)
                     let nonce = await provider.getTransactionCount(lfirst.from)
                     lfirst.nonce = nonce
@@ -219,16 +220,17 @@ class TransactionCheckLoop {
 
                     let secert_id = await this.wallet.getWallet(lfirst.from)
                     let signed = await this.vaultSign(lfirst, this.evm_config, secert_id)
-                   
+
                     transactionSended = await provider.sendTransaction(signed)
 
                 } else {
+                    console.log("Key account Transaction")
                     let client = await this.wallet.getWallet(lfirst.from)
                     client = client.connect(provider)
                     transactionSended = await client.sendTransaction(lfirst)
                 }
 
-                
+
                 console.log("transactionSended:")
                 console.log(transactionSended)
 
@@ -238,7 +240,7 @@ class TransactionCheckLoop {
                 this.fail_num = 0
             } catch (err) {
                 if(
-                    err.reason == "execution reverted: ERC20: insufficient allowance" 
+                    err.reason == "execution reverted: ERC20: insufficient allowance"
                 || err.reason == "execution reverted: ERC20: transfer amount exceeds allowance"
                 || err.reason == "execution reverted: BEP20: transfer amount exceeds allowance"){
                     await this.paddingListHolder.jumpApprove(lfirstData)
@@ -268,13 +270,13 @@ class TransactionCheckLoop {
                 if(transactionReceipt.status == 1) {
                     // 更新队列
                     this.paddingListHolder.onTransactionNowSucceed(lfirstData)
-    
+
                 } else {
                     //TODO Throws Error
                 }
             }
 
- 
+
         }
 
 
@@ -299,7 +301,7 @@ class TransactionManager {
         if(evm_config.clear_padding == true) {
             await this.redis.del(CACHE_KEY_LOCAL_PADDING_LIST)
         }
-        
+
         let num = await this.redis.llen(CACHE_KEY_LOCAL_PADDING_LIST)
         this.local_padding_list = await this.redis.lrange(CACHE_KEY_LOCAL_PADDING_LIST, 0, num)
         console.log("local_padding_list:")
@@ -331,11 +333,11 @@ class TransactionManager {
     jumpApprove = async (transaction) => {
 
         console.log("jumpApprove")
-        
+
         let walletInfos = await this.wallet.getWalletInfo()
         let token =  ethers.BigNumber.from(transaction.rawData.token).toHexString()
         let wallet = walletInfos.filter(info => info.token.toLowerCase() == token.toLowerCase() && info.wallet_name == transaction.rawData.sender_wallet_name)[0]
-        
+
         console.log("token:", token)
         console.log("balance:", wallet.balance_value.toString())
 
