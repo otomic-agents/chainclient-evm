@@ -211,7 +211,7 @@ class TransactionCheckLoop {
                 let transactionSended
 
                 if ((dev.dev && dev.dev_sign) || this.wallet.isVault(lfirst.from)) {
-                    console.log("Vault account Transaction")
+                    console.log("Vault account Transaction",this.wallet.isVault(lfirst.from),(dev.dev && dev.dev_sign))
                     let provider = new ethers.providers.JsonRpcProvider(this.evm_config.rpc_url)
                     let nonce = await provider.getTransactionCount(lfirst.from)
                     lfirst.nonce = nonce
