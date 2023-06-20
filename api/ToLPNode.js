@@ -18,14 +18,14 @@ const buildTransferIn = async (ctx, command_transfer_in, gas, obridge_iface) => 
     ])
 
     let transactionRequest = {
-        to          : ctx.config.evm_config.contract_address,
-        from        : wallet_address,
+        to: ctx.config.evm_config.contract_address,
+        from: wallet_address,
         // nonce       : undefined,
-        data        : calldata,
-        value       : command_transfer_in.eth_amount + '',
+        data: calldata,
+        value: command_transfer_in.eth_amount + '',
         // gasLimit    : 21000,
-        gasPrice    : gas.gas_price,
-        chainId     : ctx.config.evm_config.chain_id,
+        gasPrice: gas.gas_price,
+        chainId: ctx.config.evm_config.chain_id,
         // Content to be optimized
         // maxFeePerGas            :'',
         // maxPriorityFeePerGas    :'',
@@ -53,14 +53,14 @@ const buildTransferConfirm = async (ctx, command_transfer_confirm, gas, obridge_
     ])
 
     let transactionRequest = {
-        to          : ctx.config.evm_config.contract_address,
-        from        : wallet_address,
+        to: ctx.config.evm_config.contract_address,
+        from: wallet_address,
         // nonce       : undefined,
-        data        : calldata,
-        value       : 0,
+        data: calldata,
+        value: 0,
         // gasLimit    : 21000,
-        gasPrice    : gas.gas_price,
-        chainId     : ctx.config.evm_config.chain_id,
+        gasPrice: gas.gas_price,
+        chainId: ctx.config.evm_config.chain_id,
         // Content to be optimized
         // maxFeePerGas            :'',
         // maxPriorityFeePerGas    :'',
@@ -85,14 +85,14 @@ const buildTransferRefund = async (ctx, command_transfer_refund, gas, obridge_if
     ])
 
     let transactionRequest = {
-        to          : ctx.config.evm_config.contract_address,
-        from        : wallet_address,
+        to: ctx.config.evm_config.contract_address,
+        from: wallet_address,
         // nonce       : undefined,
-        data        : calldata,
-        value       : 0,
+        data: calldata,
+        value: 0,
         // gasLimit    : 21000,
-        gasPrice    : gas.gas_price,
-        chainId     : ctx.config.evm_config.chain_id,
+        gasPrice: gas.gas_price,
+        chainId: ctx.config.evm_config.chain_id,
         // Content to be optimized
         // maxFeePerGas            :'',
         // maxPriorityFeePerGas    :'',
@@ -128,7 +128,7 @@ const forwardToTransactionManager = (ctx, transaction, transaction_type) => {
 }
 
 class LPNodeApi {
-    constructor(){}
+    constructor() { }
 
     registerLPNode = async (ctx, next) => {
         console.log('registerLPNode')
@@ -146,7 +146,7 @@ class LPNodeApi {
         let lpnode_server_url = ctx.request.body.lpnode_server_url
         console.log('lpnode_server_url:', lpnode_server_url)
 
-        if(lpnode_server_url == undefined){
+        if (lpnode_server_url == undefined) {
             ctx.response.body = {
                 code: 30207,
                 message: 'lpnode_server_url not found'
@@ -227,10 +227,18 @@ class LPNodeApi {
     }
 
     getWallets = async (ctx, next) => {
-        let wallet_info = await ctx.wallet.getWalletInfo()
-        ctx.response.body = {
-            code: 200,
-            data: wallet_info
+        let code = 500;
+        let wallet_info;
+        try {
+            wallet_info = await ctx.wallet.getWalletInfo()
+            code = 200;
+        } catch (e) {
+            console.error(e)
+        } finally {
+            ctx.response.body = {
+                code: code,
+                data: wallet_info
+            }
         }
     }
 
