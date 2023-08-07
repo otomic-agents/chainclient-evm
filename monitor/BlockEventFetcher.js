@@ -3,7 +3,7 @@ const get_events = async (evmRpcClient, from, to, callback) => {
         
     let result
     try {
-        result = await evmRpcClient.get().request({"jsonrpc":"2.0","method":"eth_getLogs","params":[{"fromBlock":from,"toBlock":to}],"id":0}, 0);
+        result = await evmRpcClient.get().request({"jsonrpc":"2.0","method":"eth_getLogs","params":[{"fromBlock":from,"toBlock":to}],"id":0}, 8*1000);
     } catch (error) {
         console.error('get_events error')
         console.error('from:', from)
