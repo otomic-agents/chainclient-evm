@@ -7,7 +7,7 @@ module.exports = {
     },
     redis_config : {
         host    : process.env.REDIS_HOST,//dev relay:obridge-relay-db-redis-master    dev lp:obridge-lpnode-db-redis-master
-        port    : '6379',
+        port    : process.env.REDIS_PORT,
         prefix  : '',
         db      : 4,
         statusDB: 9,
