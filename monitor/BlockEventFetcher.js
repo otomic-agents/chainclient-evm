@@ -129,8 +129,8 @@ class BlockEventFetcher {
         ) {
           let block_start = self.monitor.task_block_event_now + 1;
           let block_end =
-            self.monitor.block_height - self.monitor.task_block_event_now > 10
-              ? self.monitor.task_block_event_now + 10
+            self.monitor.block_height - self.monitor.task_block_event_now > 5
+              ? self.monitor.task_block_event_now + 5
               : self.monitor.block_height;
           block_fetch_task.push({
             step: 1, // 1:wait 2:fetching 3:finished
