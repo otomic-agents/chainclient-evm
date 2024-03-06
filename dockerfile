@@ -5,6 +5,7 @@ COPY . /src/
 WORKDIR src
 
 RUN npm install
+RUN npm install -D typescript
+RUN npm install -D ts-node
 
-# CMD cd src && npm install && node server.js
-CMD node server.js
+CMD npm run start
