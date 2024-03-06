@@ -9,8 +9,8 @@ module.exports = {
         host    : process.env.REDIS_HOST,//dev relay:obridge-relay-db-redis-master    dev lp:obridge-lpnode-db-redis-master
         port    : process.env.REDIS_PORT,
         prefix  : '',
-        db      : 4,
-        statusDB: 9,
+        db      : 0,//4,
+        statusDB: 0,//9,
         pwd     : process.env.REDIS_PASSWORD
     },
     evm_config : {
