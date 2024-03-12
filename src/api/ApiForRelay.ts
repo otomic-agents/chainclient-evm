@@ -1,7 +1,7 @@
 import bodyParser from 'koa-bodyparser'
 import Router from '@koa/router'
 import { EvmConfig } from '../interface/interface'
-import { watchConfirm, watchRefund, watchTransferIn, watchTransferOut } from '../serverUtils/WatcherFactory'
+import { watchConfirmIn, watchConfirmOut, watchRefundIn, watchRefundOut, watchTransferIn, watchTransferOut } from '../serverUtils/WatcherFactory'
 import { ethers } from 'ethers'
 
 export default class ApiForRelay{
@@ -21,8 +21,10 @@ export default class ApiForRelay{
             } else {
                 watchTransferOut(ctx.monitor, relay_server_url.on_transfer_out, config)
                 watchTransferIn(ctx.monitor, relay_server_url.on_transfer_in, config)
-                watchConfirm(ctx.monitor, relay_server_url.on_confirm, config)
-                watchRefund(ctx.monitor, relay_server_url.on_refunded, config)
+                watchConfirmOut(ctx.monitor, relay_server_url.on_confirm_out, config)
+                watchConfirmIn(ctx.monitor, relay_server_url.on_confirm_in, config)
+                watchRefundOut(ctx.monitor, relay_server_url.on_refunded_out, config)
+                watchRefundIn(ctx.monitor, relay_server_url.on_refunded_in, config)
                 ctx.response.body = {
                     code: 200,
                     message: 'register succeed'

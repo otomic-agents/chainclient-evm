@@ -3,7 +3,7 @@ import bodyParser from 'koa-bodyparser'
 import Router from '@koa/router'
 import { EvmConfig, KoaCtx, TransactionRequestCC } from '../interface/interface'
 import { ethers } from "ethers"
-import { watchConfirm, watchRefund, watchTransferIn, watchTransferOut } from '../serverUtils/WatcherFactory'
+import { watchConfirmIn, watchConfirmOut, watchRefundIn, watchRefundOut, watchTransferIn, watchTransferOut } from '../serverUtils/WatcherFactory'
 
 const buildTransferIn = async (ctx: KoaCtx, command_transfer_in: any, gas: any, obridgeIface: ethers.utils.Interface) => {
 
@@ -161,8 +161,10 @@ export default class ApiForLp{
             } else {
                 watchTransferOut(ctx.monitor, lpnode_server_url.on_transfer_out, config)
                 watchTransferIn(ctx.monitor, lpnode_server_url.on_transfer_in, config)
-                watchConfirm(ctx.monitor, lpnode_server_url.on_confirm, config)
-                watchRefund(ctx.monitor, lpnode_server_url.on_refunded, config)
+                watchConfirmOut(ctx.monitor, lpnode_server_url.on_confirm_out, config)
+                watchConfirmIn(ctx.monitor, lpnode_server_url.on_confirm_in, config)
+                watchRefundOut(ctx.monitor, lpnode_server_url.on_refunded_out, config)
+                watchRefundIn(ctx.monitor, lpnode_server_url.on_refunded_in, config)
                 ctx.response.body = {
                     code: 200,
                     message: 'register succeed'

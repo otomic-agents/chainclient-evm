@@ -65,26 +65,29 @@ export default class EventFilter {
                     
                     if (self.monitor.evmRpcClient == undefined) throw new Error("evmRpcClient not found");
                     
-                    let tx
-                    try {
-                        tx = await self.monitor.evmRpcClient.get().request(
-                            { 
-                                // "jsonrpc": "2.0",
-                                 "method": "eth_getTransactionReceipt",
-                                 "params": [log.transactionHash],
-                                //  "id": 0 
-                            })
-                    } catch (error) {
-                        console.error(error)
-                    }
-                    
-                    let eventParse = Web3EthAbi.decodeLog(filter_info.event_data.inputs, log.data, log.topics.slice(1))
+                    self.monitor.evmRpcClient.get().request(
+                    { 
+                        // "jsonrpc": "2.0",
+                            "method": "eth_getTransactionReceipt",
+                            "params": [log.transactionHash],
+                        //  "id": 0 
+                    }).then(resp => {
+                        const tx = resp
+                        console.log('--------------------> tx', tx)
 
-                    callback({
-                        event: log,
-                        tx,
-                        eventParse
+                        let eventParse = Web3EthAbi.decodeLog(filter_info.event_data.inputs, log.data, log.topics.slice(1))
+
+                        callback({
+                            event: log,
+                            tx,
+                            eventParse
+                        })
+                    }).catch(error => {
+                        console.log('call eth_getTransactionReceipt error', log.transactionHash)
+                        console.error(error)
                     })
+                    
+
                 })
                 
                 if(events.length > 0){

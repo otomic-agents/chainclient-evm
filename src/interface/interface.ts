@@ -25,8 +25,10 @@ export interface EvmConfig {
     start_block: string
     transfer_out: EventFilterData
     transfer_in: EventFilterData
-    confirm: EventFilterData
-    refunded: EventFilterData
+    confirm_out: EventFilterData
+    confirm_in: EventFilterData
+    refunded_out: EventFilterData
+    refunded_in: EventFilterData
     abi: {
         erc20: any,
         obridge: any
@@ -92,6 +94,16 @@ export interface MonitorWatchStatusInfo {
     TransferIn: string | undefined
     Confirm: string | undefined
     Refund: string | undefined
+}
+
+export interface CallbackUrlBox {
+    on_transfer_out: string
+    on_transfer_in: string
+    on_confirm_out: string
+    on_confirm_in: string
+    on_refunded_out: string
+    on_refunded_in: string
+    on_height_update: string | undefined
 }
 
 export type KoaCtx = Koa.ParameterizedContext<Koa.DefaultState, Koa.DefaultContext & Router.RouterParamContext<Koa.DefaultState, Koa.DefaultContext>, unknown>

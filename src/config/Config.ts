@@ -1,4 +1,4 @@
-import OBridgeABI from './OBridgeABI'//'./OtmoicV2ABI'
+import OBridgeABI from './OtmoicV2ABI'
 import Erc20ABI from './Erc20ABI'
 
 export default {
@@ -21,20 +21,28 @@ export default {
         chain_id            : process.env.CHAIN_ID,
         start_block         : process.env.START_BLOCK,
         transfer_out        : {
-            topic_string    : "0x573e213380faa927b1c1335457fe327e653e0604ed6a2c2f878f06a042896511",
+            topic_string    : "0x6f23424d5b4b46b615e9bc626f50d7a009696e3c66ccc5c98a7c0f64ca0850c5",
             event_data      : OBridgeABI.abi.filter(item => item.name == "LogNewTransferOut" && item.type == "event")[0]
         },
         transfer_in         : {
-            topic_string    : "0x48e8c25194d6eb9633068bb38aea36f72e1c4b4d6e892ff556b8a63a803c2fd0",
+            topic_string    : "0xb404f6c3a389ecc657909242c386f01829f911f7a2b87aeefda2f99ff71b4ee8",
             event_data      : OBridgeABI.abi.filter(item => item.name == "LogNewTransferIn" && item.type == "event")[0]
         },
-        confirm             : {
-            topic_string    : "0xb7ae890c7a4721f7ed769dabfeee74f0e0f5bcdaad9cab432ccea4d9fa435b50",
-            event_data      : OBridgeABI.abi.filter(item => item.name == "LogTransferConfirmed" && item.type == "event")[0]            
+        confirm_out         : {
+            topic_string    : "0xa97507b360853b32823c08fab936a2fda59be9d10546dc57cf24bfb9983ffabc",
+            event_data      : OBridgeABI.abi.filter(item => item.name == "LogTransferOutConfirmed" && item.type == "event")[0]            
         },
-        refunded            : {
-            topic_string    : "0x70a8f332cabb778f79acc5b97cbb4543970a2f1a34bd0773e4b3012931f752dc",
-            event_data      : OBridgeABI.abi.filter(item => item.name == "LogTransferRefunded" && item.type == "event")[0]            
+        confirm_in          : {
+            topic_string    : "0xb159ce7fabaa0a8069cb6f5df091ea5de4c9ed97074b87000dd8e8ec0eef35dd",
+            event_data      : OBridgeABI.abi.filter(item => item.name == "LogTransferInConfirmed" && item.type == "event")[0]            
+        },
+        refunded_out        : {
+            topic_string    : "0x2d8d59b9e17fe6a421c8b5b59fdc102b506210b116e72c9ad64cb95da671be44",
+            event_data      : OBridgeABI.abi.filter(item => item.name == "LogTransferOutRefunded" && item.type == "event")[0]            
+        },
+        refunded_in         : {
+            topic_string    : "LogTransferInRefunded-topic0",
+            event_data      : OBridgeABI.abi.filter(item => item.name == "LogTransferInRefunded" && item.type == "event")[0]            
         },
         abi                 : {
             erc20           : Erc20ABI.abi,

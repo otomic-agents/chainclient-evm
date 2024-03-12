@@ -3,9 +3,8 @@ import { BlockFetchTask, EvmRpcClient } from "../interface/interface";
 import { ethers } from "ethers";
 
 const get_events = async (evmRpcClient: EvmRpcClient, from: string, to: string, callback: Function) => {
-    let result;
-    try {
-        result = await evmRpcClient
+    
+    evmRpcClient
             .get()
             .request(
                 {
@@ -15,16 +14,16 @@ const get_events = async (evmRpcClient: EvmRpcClient, from: string, to: string, 
                     // id: 0,
                 },
                 8 * 1000
-            );
-    } catch (error) {
-        console.error("get_events error");
-        console.error("from:", from);
-        console.error("to:", to);
-        console.error(error);
-        callback(error, null);
-        return;
-    }
-    callback(null, result);
+            ).then(resp => {
+                callback(null, resp);
+            }).catch(error => {
+                console.error("get_events error");
+                console.error("from:", from);
+                console.error("to:", to);
+                console.error(error);
+                callback(error, null);
+            });
+
 };
 
 const startFetchEvent = (evmRpcClient: EvmRpcClient, blockFetchTaskList: BlockFetchTask[]) => {
@@ -180,7 +179,13 @@ export default class BlockEventFetcher {
                 }
             }
 
-            setTimeout(dispatch, 5000);
+            if (self.historyMode && blockFetchTaskList.length == 0) {
+                console.log('task history finished')
+            } else {
+                setTimeout(dispatch, 5000);
+            }
+
+            
         };
         dispatch();
 
