@@ -1,0 +1,118 @@
+import { BlockFetchTask, EvmConfig, EvmRpcClient, MonitorWatchStatusInfo, FilterInfo } from '../interface/interface'
+import BlockEventFetcher from './BlockEventFetcher'
+import EventFilter from './EventFilter'
+import Redis from 'ioredis'
+
+const CACHE_KEY_EVENT_HEIGHT = "CACHE_KEY_EVENT_HEIGHT"
+
+export interface HeightWatcher {
+    onHeightUpdate: (height: number) => void
+}
+
+export default class Monitor{
+
+    statusWatcher: MonitorWatchStatusInfo[]
+    redis: Redis | undefined
+    evmRpcClient: EvmRpcClient | undefined
+    evmConfig: EvmConfig | undefined
+
+    statusBlockHeight: number | undefined
+
+    blockEventFetcher: BlockEventFetcher | undefined
+    eventFilter: EventFilter | undefined
+
+    blockFetchTaskList: BlockFetchTask[] | undefined
+
+    fetchBlockRunning: boolean | undefined
+    taskBlockEventNow: number | undefined
+
+    blockHeight: number | undefined
+
+    modeHistory: boolean = false
+
+    heightWatchers: HeightWatcher[] = []
+
+    constructor(){
+        this.statusWatcher = []
+    }
+
+    setConfigModeChase = async (redis: Redis, evmRpcClient: EvmRpcClient, evmConfig: EvmConfig) => {
+        this.redis = redis
+        this.evmRpcClient = evmRpcClient
+        this.evmConfig = evmConfig
+        
+        let cache_height = await this.redis.get(`${CACHE_KEY_EVENT_HEIGHT}_${evmConfig.system_chain_id}`)
+        console.log('cache_key:', `${CACHE_KEY_EVENT_HEIGHT}_${evmConfig.system_chain_id}`)
+        console.log('cache_height:', cache_height)
+        this.evmConfig.start_block = cache_height == undefined ? this.evmConfig.start_block : 
+                                      parseInt(cache_height) > parseInt(this.evmConfig.start_block) ? cache_height : this.evmConfig.start_block
+
+        this.statusBlockHeight = parseInt(this.evmConfig.start_block)
+    }
+
+    setConfigModeHistory = async (evmRpcClient: EvmRpcClient, start: number, end: number) => {
+        this.modeHistory = true
+        this.blockHeight = end
+        this.statusBlockHeight = start
+        this.taskBlockEventNow = start
+        this.evmRpcClient = evmRpcClient
+    }
+
+    watch = (filter_info: FilterInfo, callback: Function, statusInfo: MonitorWatchStatusInfo) => {
+
+        console.group('on watch')
+
+        console.log('filter_info:')
+        console.log(filter_info)
+
+        if(this.blockEventFetcher == undefined){
+            this.blockEventFetcher = new BlockEventFetcher(this, this.modeHistory, this.blockHeight)
+            if (!this.modeHistory) {
+                this.blockEventFetcher.startFetch()
+            }
+        }
+        if(this.eventFilter == undefined){
+            this.eventFilter = new EventFilter(this)
+        }
+        
+        this.eventFilter.startFilter(filter_info, callback)
+
+        console.groupEnd()
+
+        this.statusWatcher.push(statusInfo)
+    }
+
+    watchHeight = (watcher: HeightWatcher) => {
+        this.heightWatchers.push(watcher)
+    }
+
+    historyModeStart = () => {
+        if (this.modeHistory && this.blockEventFetcher != undefined) {
+            this.blockEventFetcher.startFetch()
+            console.log('----------------------------> historyModeStart')
+        }
+    }
+
+    update_height = async (height: number) => {
+
+        console.log('update_height:', height)
+        this.statusBlockHeight = height
+
+        if (!this.modeHistory) {
+            if (this.redis == undefined || this.evmConfig == undefined) throw new Error("db state error");
+
+            await this.redis.set(`${CACHE_KEY_EVENT_HEIGHT}_${this.evmConfig.system_chain_id}`, height)
+        }
+
+        for (const watcher of this.heightWatchers) {
+            watcher.onHeightUpdate(height)
+        }
+    }
+
+    getStatus = async () => {
+        return {
+            block_height: this.statusBlockHeight,
+            watcher: this.statusWatcher
+        }
+    }
+}
