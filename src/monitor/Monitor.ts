@@ -15,6 +15,8 @@ function alignToNearest5(num: number): number {
 
 export default class Monitor{
 
+    restarting: boolean = false
+
     statusWatcher: MonitorWatchStatusInfo[]
     redis: Redis | undefined
     evmRpcClient: EvmRpcClient | undefined
@@ -25,9 +27,9 @@ export default class Monitor{
     blockEventFetcher: BlockEventFetcher | undefined
     eventFilter: EventFilter | undefined
 
-    blockFetchTaskList: BlockFetchTask[] | undefined
+    blockFetchTaskList: BlockFetchTask[] = []
 
-    fetchBlockRunning: boolean | undefined
+    fetchBlockRunning: boolean = false
     taskBlockEventNow: number | undefined
 
     realBlockHeight: number | undefined
@@ -49,11 +51,35 @@ export default class Monitor{
         let cache_height = await this.redis.get(`${CACHE_KEY_EVENT_HEIGHT}_${evmConfig.system_chain_id}`)
         console.log('cache_key:', `${CACHE_KEY_EVENT_HEIGHT}_${evmConfig.system_chain_id}`)
         console.log('cache_height:', cache_height)
-        this.evmConfig.start_block = cache_height == undefined ? this.evmConfig.start_block : 
-                                      parseInt(cache_height) > parseInt(this.evmConfig.start_block) ? cache_height : this.evmConfig.start_block
+
+        if (cache_height == undefined) {
+            if (this.evmConfig.start_top_height == 'true') {
+                console.log('start_top_height true')
+                if(this.blockEventFetcher == undefined){
+                    this.blockEventFetcher = new BlockEventFetcher(this, this.modeHistory, 0)
+                }
+                await this.blockEventFetcher.blockHeight((err: Error, result: any) => {
+                    if (!err) {
+                        this.evmConfig.start_block = (parseInt(result, 16) - 6).toString()
+                    } else {
+                        throw new Error("get height error");
+                    }
+                    console.log('this.evmConfig.start_block update:', this.evmConfig.start_block)
+                })
+            } else {
+                // nothing need to do
+                // this.evmConfig.start_block = this.evmConfig.start_block
+            }
+        } else {
+            this.evmConfig.start_block =  
+                parseInt(cache_height) > parseInt(this.evmConfig.start_block) ? cache_height : this.evmConfig.start_block
+
+        }
+
 
         this.statusBlockHeight = alignToNearest5(parseInt(this.evmConfig.start_block))
         this.taskBlockEventNow = this.statusBlockHeight
+        console.log('set config finished:', this.evmConfig.start_block, this.statusBlockHeight, this.taskBlockEventNow)
     }
 
     setConfigModeHistory = async (evmRpcClient: EvmRpcClient, start: number, end: number) => {
@@ -71,12 +97,22 @@ export default class Monitor{
         console.log('filter_info:')
         console.log(filter_info)
 
+        console.log('fetchBlockRunning', this.fetchBlockRunning)
         if(this.blockEventFetcher == undefined){
             this.blockEventFetcher = new BlockEventFetcher(this, this.modeHistory, this.blockHeight)
-            if (!this.modeHistory) {
+            if (this.modeHistory == false) {
+                console.log('start fetch')
                 this.blockEventFetcher.startFetch()
             }
+        } else {
+            if (this.fetchBlockRunning == false) {
+                if (this.modeHistory == false) {
+                    console.log('start fetch')
+                    this.blockEventFetcher.startFetch()
+                }
+            }
         }
+
         if(this.eventFilter == undefined){
             this.eventFilter = new EventFilter(this)
         }

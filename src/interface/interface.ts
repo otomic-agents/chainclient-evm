@@ -5,6 +5,8 @@ import { Client } from "@open-rpc/client-js";
 
 export interface EvmRpcClient {
     get: () => Client
+    saveBlack: () => void
+    saveBlackTemporary: () => void
 }
 
 export interface EventFilterData {
@@ -17,6 +19,7 @@ export interface SyncerConfig {
 }
 
 export interface EvmConfig {
+    start_top_height: string
     clear_padding: boolean
     rpc_url: string
     contract_address: string
@@ -43,13 +46,15 @@ export interface TokenInfo {
 }
 
 export interface WalletConfig {
+    vault_name: string;
     wallet_name: string
     address: string
     type: string
     web3Wallet: ethers.Wallet
     private_key: string
     secert_id: string
-    token_list: TokenInfo[]
+    token_list: string[]
+    can_sign_712: boolean
 }
 
 export interface CommandTransfer {
@@ -71,6 +76,7 @@ export interface CommandTransferIn {
 }
 
 export interface CommandTransferConfirm {
+    sender: string
     sender_wallet_name: string
     user_receiver_address: string
     token: string
@@ -84,6 +90,31 @@ export interface CommandTransferConfirm {
 
 export interface CommandTransferRefund {
     sender_wallet_name: string
+    user_receiver_address: string
+    token: string
+    token_amount: string
+    eth_amount: string
+    hash_lock: string
+    step_time_lock: string
+    agreement_reached_time: string
+}
+
+export interface CommandTransferOutConfirm {
+    sender: string
+    user_receiver_address: string
+    token: string
+    token_amount: string
+    eth_amount: string
+    hash_lock: string
+    relay_hash_lock: string
+    step_time_lock: string
+    preimage: string
+    relay_preimage: string
+    agreement_reached_time: string
+}
+
+export interface CommandTransferOutRefund {
+    sender: string
     user_receiver_address: string
     token: string
     token_amount: string

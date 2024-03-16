@@ -17,6 +17,7 @@ import Wallet from './wallet/Wallet'
 import TransactionManager from './wallet/TransactionManager'
 import StatusSyncer from './status/StatusSyncer'
 import { watchConfirmOut, watchRefundOut, watchTransferIn, watchTransferOut } from './serverUtils/WatcherFactory'
+import RPCGeter from './serverUtils/RPCGeter'
 
 export default class ChainClientEVM {
     
@@ -30,6 +31,10 @@ export default class ChainClientEVM {
 
     evmRpcClient: EvmRpcClient | undefined
 
+    rpcUrl: string = Config.evm_config.rpc_url
+
+    rpcGeter: RPCGeter = new RPCGeter()
+
     constructor () {
 
     }
@@ -41,7 +46,13 @@ export default class ChainClientEVM {
 
         await this.initModule()
 
-        await this.initDefaultWatcher()
+        if (Config.server_config.auto_start == 'true') {
+            await this.initDefaultWatcher()
+        }
+
+        if (Config.server_config.relay_wallet == 'true') {
+            await this.initRelayWallet()
+        }
 
         await this.initRouter()
 
@@ -60,6 +71,15 @@ export default class ChainClientEVM {
         this.redis = new Redis(opt);
     }
 
+    changeUrl = async () => {
+        this.rpcUrl = await this.rpcGeter.chooseOne(parseInt(Config.evm_config.chain_id))
+        
+        if (this.rpcUrl == undefined) {
+            this.rpcUrl = Config.evm_config.rpc_url_preset
+        }
+        Config.evm_config.rpc_url = this.rpcUrl
+    }
+
     initEvmRpcClient = async () => {
         console.log('initEvmRpcClient')
         this.evmRpcClient = {
@@ -67,12 +87,28 @@ export default class ChainClientEVM {
             /* Prevent blockage of subsequent program execution when frequency limiting,
             no response, etc. occur, and create a new connection for request each time */
             get : () => {
-                let transport = new HTTPTransport(Config.evm_config.rpc_url as string,
+                let transport = new HTTPTransport(this.rpcUrl as string,
                     {headers: {"Accept-Encoding": "gzip"}}
                 );
                 let requestManager = new RequestManager([transport]);
                 let client = new Client(requestManager);
                 return client
+            },
+
+            saveBlack : async () => {
+                this.rpcGeter.addBlack(this.rpcUrl)
+                this.changeUrl()
+            },
+
+            saveBlackTemporary : async () => {
+                this.rpcGeter.addBlack(this.rpcUrl)
+                this.changeUrl()
+
+                let thisUrl = `${this.rpcUrl}`
+                setTimeout(() => {
+                    this.rpcGeter.blackList = this.rpcGeter.blackList.filter(item => item != thisUrl)
+                    console.log('this.rpcGeter.blackList', this.rpcGeter.blackList)
+                }, 10 * 60 * 1000)
             }
         }
     }
@@ -83,10 +119,11 @@ export default class ChainClientEVM {
         this.wallet = new Wallet()
         this.transactionManager = new TransactionManager()
         this.syncer = new StatusSyncer()
+        await this.changeUrl()
 
-        this.monitor.setConfigModeChase(this.redis, this.evmRpcClient, Config.evm_config)
-        this.wallet.setConfig(this.redis, this.evmRpcClient, Config.evm_config)
-        this.transactionManager.setConfig(this.redis, this.wallet, this.evmRpcClient, Config.evm_config)
+        await this.monitor.setConfigModeChase(this.redis, this.evmRpcClient, Config.evm_config)
+        await this.wallet.setConfig(this.redis, this.evmRpcClient, Config.evm_config)
+        await this.transactionManager.setConfig(this.redis, this.wallet, this.evmRpcClient, Config.evm_config)
 
 
 
@@ -116,6 +153,10 @@ export default class ChainClientEVM {
         if (Config.relay_server_url.on_refunded != undefined && Config.relay_server_url.on_refunded != "") {
             watchRefundOut(this.monitor, Config.relay_server_url.on_refunded, Config.evm_config, false, undefined)
         }
+    }
+
+    initRelayWallet = async () => {
+        await this.wallet.updateWallet(Config.relay_wallet)
     }
 
     initRouter = async () => {

@@ -16,17 +16,24 @@ const get_events = async (evmRpcClient: EvmRpcClient, from: string, to: string, 
                 8 * 1000
             ).then(resp => {
                 callback(null, resp);
-            }).catch(error => {
+            }).catch(async (error: Error) => {
                 console.error("get_events error");
                 console.error("from:", from);
                 console.error("to:", to);
                 console.error(error);
+                if (error.message.indexOf('limit exceeded')) {
+                    await evmRpcClient.saveBlackTemporary()
+                } else {
+                    await evmRpcClient.saveBlack()
+                }
+                
+
                 callback(error, null);
             });
 
 };
 
-const startFetchEvent = (evmRpcClient: EvmRpcClient, blockFetchTaskList: BlockFetchTask[]) => {
+const startFetchEvent = (evmRpcClient: EvmRpcClient, blockFetchTaskList: BlockFetchTask[], monitor: Monitor) => {
     let createEventFetcher = () => {
         console.log("create event fetcher");
         let run = async () => {
@@ -38,7 +45,7 @@ const startFetchEvent = (evmRpcClient: EvmRpcClient, blockFetchTaskList: BlockFe
                 }
             }
 
-            if (task == undefined) {
+            if (task == undefined || monitor.restarting) {
                 setTimeout(() => run(), 1000);
                 return;
             }
@@ -80,7 +87,7 @@ const startFetchEvent = (evmRpcClient: EvmRpcClient, blockFetchTaskList: BlockFe
     };
 
     let fetchers: any[] = [];
-    while (fetchers.length < 3) {
+    while (fetchers.length < 1) {
         let fetcher = createEventFetcher();
         fetcher.run();
         fetchers.push(fetcher);
@@ -192,7 +199,7 @@ export default class BlockEventFetcher {
 
         if (this.monitor.evmRpcClient == undefined) throw new Error("evmRpcClient state error");
        
-        startFetchEvent(this.monitor.evmRpcClient, blockFetchTaskList);
+        startFetchEvent(this.monitor.evmRpcClient, blockFetchTaskList, this.monitor);
     };
 
     blockHeight = async (callback: Function) => {

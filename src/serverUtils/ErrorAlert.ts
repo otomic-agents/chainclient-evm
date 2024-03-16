@@ -14,7 +14,7 @@ export default class ErrorAlert {
         
             stop()
         
-            setTimeout(() => restart(), parseInt(process.env.RESTART_TIME as string))
+            setTimeout(() => restart(), 10000)
         });
         
         process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
@@ -25,7 +25,7 @@ export default class ErrorAlert {
         
             stop()
         
-            setTimeout(() => restart(), parseInt(process.env.RESTART_TIME as string))
+            setTimeout(() => restart(), 10000)
         });
 
         setInterval(() => {

@@ -23,6 +23,10 @@ const getGasPrice = async (flag: string, evmConfig: EvmConfig) => {
                 return 5000000010;
         case "9000"://AVAX
             return 26000000010;
+        case "60":
+            return -1;
+        case "966":
+            return -1;
         default:
             break;
     }
@@ -229,7 +233,12 @@ class TransactionCheckLoop {
             console.group("send new transaction")
             //get gas_price
             let gas_price = await getGasPrice(lfirst.gasPrice as string, this.evmConfig)
-            lfirst.gasPrice = gas_price
+            if (gas_price == -1) {
+                delete lfirst.gasPrice
+            } else {
+                lfirst.gasPrice = gas_price
+            }
+            
             //get limit
             let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
 
@@ -283,7 +292,8 @@ class TransactionCheckLoop {
                 if(
                     err.reason == "execution reverted: ERC20: insufficient allowance"
                 || err.reason == "execution reverted: ERC20: transfer amount exceeds allowance"
-                || err.reason == "execution reverted: BEP20: transfer amount exceeds allowance"){
+                || err.reason == "execution reverted: BEP20: transfer amount exceeds allowance"
+                || err.reason == "execution reverted"){
                     await this.paddingListHolder.jumpApprove(lfirstData)
                 } else {
                     console.log('this.failNum:', this.failNum)
@@ -309,7 +319,7 @@ class TransactionCheckLoop {
                 lfirstData.transactionReceipt = transactionReceipt
 
                 if(transactionReceipt.status == 1) {
-                    // 更新队列
+                    // update queue
                     this.paddingListHolder.onTransactionNowSucceed(lfirstData)
 
                 } else {
@@ -408,7 +418,7 @@ export default class TransactionManager {
         let wallet = walletInfos.filter(info => {
             if (transaction.rawData == undefined) throw new Error("state error transaction.rawData undefined");
 
-            return info.token.token_id.toLowerCase() == token.toLowerCase() && info.wallet_name == transaction.rawData.sender_wallet_name
+            return info.token.toLowerCase() == token.toLowerCase() && info.wallet_name == transaction.rawData.sender_wallet_name
         })[0]
 
         console.log("token:", token)

@@ -8,11 +8,19 @@ const errorAlert = new ErrorAlert()
 
 const stop = () => {
     console.log('on stop');
-    
+    if (server != undefined) {
+        server.monitor.restarting = true
+
+    }
 }
 
-const restart = () => {
+const restart = async () => {
     console.log('on restart');
+    if (server != undefined) {
+        await server.evmRpcClient.saveBlackTemporary()
+        await server.changeUrl()
+        server.monitor.restarting = false
+    }
 
 }
 

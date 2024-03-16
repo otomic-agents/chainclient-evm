@@ -14,20 +14,20 @@ const createCallback = (url: string, type: string, config: EvmConfig, merge: boo
                 event.eventParse.bid_id = event.eventParse.bidId
                 event.eventParse.dst_address = event.eventParse.dstAddress
                 event.eventParse.hash_lock = event.eventParse.hashlock
-                event.eventParse.time_lock = event.eventParse.timelock
+                // event.eventParse.time_lock = event.eventParse.timelock
                 event.eventParse.dst_token = event.eventParse.tokenDst
                 event.eventParse.dst_amount = event.eventParse.amountDst
                 event.eventParse.agreement_reached_time = event.eventParse.agreementReachedTime
-                event.eventParse.step_timelock = event.eventParse.stepTimelock
+                event.eventParse.step_time_lock = event.eventParse.stepTimelock
                 break;
             case "TransferIn":
                 event.eventParse.transfer_id = event.eventParse.transferId
                 event.eventParse.hash_lock = event.eventParse.hashlock
-                event.eventParse.time_lock = event.eventParse.timelock
+                // event.eventParse.time_lock = event.eventParse.timelock
                 event.eventParse.src_chain_id = event.eventParse.srcChainId
                 event.eventParse.src_transfer_id = event.eventParse.srcTransferId
                 event.eventParse.agreement_reached_time = event.eventParse.agreementReachedTime
-                event.eventParse.step_timelock = event.eventParse.stepTimelock
+                event.eventParse.step_time_lock = event.eventParse.stepTimelock
                 break;
             case "ConfirmOut":
                 event.eventParse.transfer_id = event.eventParse.transferId

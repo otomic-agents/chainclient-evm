@@ -46,7 +46,7 @@ const buildTransferIn = async (ctx: KoaCtx, command_transfer_in: CommandTransfer
 const buildTransferConfirm = async (ctx: KoaCtx, command_transfer_confirm: CommandTransferConfirm, gas: GasInfo, obridgeIface: ethers.utils.Interface): Promise<TransactionRequestCC> => {
 
     let wallet_address = await ctx.wallet.getAddress(command_transfer_confirm.sender_wallet_name)
-    let calldata = obridgeIface.encodeFunctionData("confirm", [
+    let calldata = obridgeIface.encodeFunctionData("confirmTransferIn", [
         wallet_address,                                                                             // address _sender,
         ethers.BigNumber.from(command_transfer_confirm.user_receiver_address).toHexString(),        // address _receiver,
         ethers.BigNumber.from(command_transfer_confirm.token).toHexString(),                        // address _token,
@@ -81,7 +81,7 @@ const buildTransferConfirm = async (ctx: KoaCtx, command_transfer_confirm: Comma
 const buildTransferRefund = async (ctx: KoaCtx, command_transfer_refund: CommandTransferRefund, gas: GasInfo, obridgeIface: ethers.utils.Interface): Promise<TransactionRequestCC> => {
 
     let wallet_address = await ctx.wallet.getAddress(command_transfer_refund.sender_wallet_name)
-    let calldata = obridgeIface.encodeFunctionData("refund", [
+    let calldata = obridgeIface.encodeFunctionData("refundTransferIn", [
         wallet_address,                                                                             // address _sender,
         ethers.BigNumber.from(command_transfer_refund.user_receiver_address).toHexString(),         // address _receiver,
         ethers.BigNumber.from(command_transfer_refund.token).toHexString(),                         // address _token,
@@ -166,10 +166,14 @@ export default class ApiForLp{
             } else {
                 watchTransferOut(ctx.monitor, lpnode_server_url.on_transfer_out, config, false, undefined)
                 watchTransferIn(ctx.monitor, lpnode_server_url.on_transfer_in, config, false, undefined)
-                watchConfirmOut(ctx.monitor, lpnode_server_url.on_confirm_out, config, false, undefined)
-                watchConfirmIn(ctx.monitor, lpnode_server_url.on_confirm_in, config, false, undefined)
-                watchRefundOut(ctx.monitor, lpnode_server_url.on_refunded_out, config, false, undefined)
-                watchRefundIn(ctx.monitor, lpnode_server_url.on_refunded_in, config, false, undefined)
+                // watchConfirmOut(ctx.monitor, lpnode_server_url.on_confirm_out, config, false, undefined)
+                // watchConfirmIn(ctx.monitor, lpnode_server_url.on_confirm_in, config, false, undefined)
+                // watchRefundOut(ctx.monitor, lpnode_server_url.on_refunded_out, config, false, undefined)
+                // watchRefundIn(ctx.monitor, lpnode_server_url.on_refunded_in, config, false, undefined)
+                watchConfirmOut(ctx.monitor, lpnode_server_url.on_confirm, config, false, undefined)
+                watchConfirmIn(ctx.monitor, lpnode_server_url.on_confirm, config, false, undefined)
+                watchRefundOut(ctx.monitor, lpnode_server_url.on_refunded, config, false, undefined)
+                watchRefundIn(ctx.monitor, lpnode_server_url.on_refunded, config, false, undefined)
                 ctx.response.body = {
                     code: 200,
                     message: 'register succeed'
@@ -273,6 +277,23 @@ export default class ApiForLp{
                     code: code,
                     data: wallet_info
                 }
+            }
+        })
+
+        router.post(`/evm-client-${config.system_chain_id}/lpnode/sign_message_712`, async (ctx, next) => {
+            const signData = (ctx.request.body as any).sign_data
+            const walletName = (ctx.request.body as any).wallet_name
+
+            console.log('on sign_message_712')
+            console.log('signData', signData)
+            console.log('walletName', walletName)
+
+            const signed = await ctx.wallet.signMessage712(signData, walletName)
+
+            console.log('signed', signed)
+            ctx.response.body = {
+                code: 200,
+                signed: signed
             }
         })
     }
