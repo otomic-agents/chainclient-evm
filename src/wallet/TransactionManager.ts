@@ -28,7 +28,7 @@ const getGasPrice = async (flag: string, evmConfig: EvmConfig) => {
         case "966":
             return -1;
         default:
-            break;
+            return -1;
     }
 }
 
