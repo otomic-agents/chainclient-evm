@@ -72,7 +72,11 @@ export default class ChainClientEVM {
     }
 
     changeUrl = async () => {
-        this.rpcUrl = await this.rpcGeter.chooseOne(parseInt(Config.evm_config.chain_id))
+
+        if (process.env.AUTO_RPC == 'true') {
+            this.rpcUrl = await this.rpcGeter.chooseOne(parseInt(Config.evm_config.chain_id))
+        }
+        
         
         if (this.rpcUrl == undefined) {
             this.rpcUrl = Config.evm_config.rpc_url_preset
