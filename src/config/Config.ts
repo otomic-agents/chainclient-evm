@@ -37,8 +37,8 @@ export default {
         host    : process.env.REDIS_HOST,//dev relay:obridge-relay-db-redis-master    dev lp:obridge-lpnode-db-redis-master
         port    : process.env.REDIS_PORT,
         prefix  : '',
-        db      : 0,//4,
-        statusDB: 0,//9,
+        db      : process.env.REDIS_DB_NUMBER == undefined ? 0 : parseInt(process.env.REDIS_DB_NUMBER),//4,
+        statusDB: process.env.REDIS_DB_NUMBER == undefined ? 0 : parseInt(process.env.REDIS_DB_NUMBER),//9,
         pwd     : process.env.REDIS_PASSWORD
     },
     evm_config : {
