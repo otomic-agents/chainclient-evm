@@ -1,5 +1,7 @@
 import Koa from "koa";
 import bodyParser from "koa-bodyparser";
+import stringify from "json-stringify-safe";
+const crypto = require("crypto");
 import Router from "@koa/router";
 import {
   CommandTransferConfirm,
@@ -178,10 +180,127 @@ const forwardToTransactionManager = (
   }
 };
 
+function getObjectHash(obj) {
+  // 将对象序列化为一个确定的字符串表示
+  function serializeObject(obj) {
+    if (typeof obj !== "object" || obj === null) {
+      return String(obj);
+    }
+
+    if (Array.isArray(obj)) {
+      return `[${obj.map(serializeObject).join(",")}]`;
+    }
+
+    const keys = Object.keys(obj).sort();
+    return `{${keys
+      .map((key) => `${key}:${serializeObject(obj[key])}`)
+      .join(",")}}`;
+  }
+
+  // 使用 MD5 哈希算法生成哈希值
+  const serializedObj = serializeObject(obj);
+  const hash = crypto.createHash("md5").update(serializedObj).digest("hex");
+  return hash;
+}
+
+function cacheByFirstParamHashDecorator(): any {
+  const cacheMap = new Map();
+
+  return function (target, propertyKey, descriptor) {
+    const originalMethod = descriptor.value;
+
+    descriptor.value = function (...args) {
+      const firstParam = args[0];
+      const paramHash = getObjectHash(firstParam);
+
+      if (cacheMap.has(paramHash)) {
+        console.log("Using cached result for hash", paramHash);
+        return cacheMap.get(paramHash);
+      }
+
+      const result = originalMethod.apply(this, args);
+      cacheMap.set(paramHash, result);
+      return result;
+    };
+
+    return descriptor;
+  };
+}
+
 export default class ApiForLp {
   obridgeIface: ethers.utils.Interface | undefined;
-
+  @cacheByFirstParamHashDecorator()
+  private registerLpnode(requestBody, monitor, config) {
+    let lpnode_server_url = requestBody.lpnode_server_url;
+    if (lpnode_server_url == undefined) {
+      return {
+        code: 30207,
+        message: "lpnode_server_url not found",
+      };
+    } else {
+      watchTransferOut(
+        monitor,
+        lpnode_server_url.on_transfer_out,
+        config,
+        false,
+        undefined
+      );
+      watchTransferIn(
+        monitor,
+        lpnode_server_url.on_transfer_in,
+        config,
+        false,
+        undefined
+      );
+      // watchConfirmOut(ctx.monitor, lpnode_server_url.on_confirm_out, config, false, undefined)
+      // watchConfirmIn(ctx.monitor, lpnode_server_url.on_confirm_in, config, false, undefined)
+      // watchRefundOut(ctx.monitor, lpnode_server_url.on_refunded_out, config, false, undefined)
+      // watchRefundIn(ctx.monitor, lpnode_server_url.on_refunded_in, config, false, undefined)
+      watchConfirmOut(
+        monitor,
+        lpnode_server_url.on_confirm,
+        config,
+        false,
+        undefined
+      );
+      watchConfirmIn(
+        monitor,
+        lpnode_server_url.on_confirm,
+        config,
+        false,
+        undefined
+      );
+      watchRefundOut(
+        monitor,
+        lpnode_server_url.on_refunded,
+        config,
+        false,
+        undefined
+      );
+      watchRefundIn(
+        monitor,
+        lpnode_server_url.on_refunded,
+        config,
+        false,
+        undefined
+      );
+      return {
+        code: 200,
+        message: "register succeed",
+      };
+    }
+  }
   linkRouter = (router: Router, config: EvmConfig) => {
+    router.post(
+      `/evm-client-${config.system_chain_id}/lpnode/register_lpnode_support_duplication`,
+      async (ctx, next) => {
+        console.log("register_lpnode_support_duplication");
+        ctx.response.body = {
+          code: 200,
+          message: "true",
+        };
+      }
+    );
     router.post(
       `/evm-client-${config.system_chain_id}/lpnode/register_lpnode`,
       async (ctx, next) => {
@@ -201,64 +320,11 @@ export default class ApiForLp {
 
         let lpnode_server_url = (ctx.request.body as any).lpnode_server_url;
         console.log("lpnode_server_url:", lpnode_server_url);
-
-        if (lpnode_server_url == undefined) {
-          ctx.response.body = {
-            code: 30207,
-            message: "lpnode_server_url not found",
-          };
-        } else {
-          watchTransferOut(
-            ctx.monitor,
-            lpnode_server_url.on_transfer_out,
-            config,
-            false,
-            undefined
-          );
-          watchTransferIn(
-            ctx.monitor,
-            lpnode_server_url.on_transfer_in,
-            config,
-            false,
-            undefined
-          );
-          // watchConfirmOut(ctx.monitor, lpnode_server_url.on_confirm_out, config, false, undefined)
-          // watchConfirmIn(ctx.monitor, lpnode_server_url.on_confirm_in, config, false, undefined)
-          // watchRefundOut(ctx.monitor, lpnode_server_url.on_refunded_out, config, false, undefined)
-          // watchRefundIn(ctx.monitor, lpnode_server_url.on_refunded_in, config, false, undefined)
-          watchConfirmOut(
-            ctx.monitor,
-            lpnode_server_url.on_confirm,
-            config,
-            false,
-            undefined
-          );
-          watchConfirmIn(
-            ctx.monitor,
-            lpnode_server_url.on_confirm,
-            config,
-            false,
-            undefined
-          );
-          watchRefundOut(
-            ctx.monitor,
-            lpnode_server_url.on_refunded,
-            config,
-            false,
-            undefined
-          );
-          watchRefundIn(
-            ctx.monitor,
-            lpnode_server_url.on_refunded,
-            config,
-            false,
-            undefined
-          );
-          ctx.response.body = {
-            code: 200,
-            message: "register succeed",
-          };
-        }
+        ctx.response.body = this.registerLpnode(
+          ctx.request.body,
+          ctx.monitor,
+          config
+        );
       }
     );
 
