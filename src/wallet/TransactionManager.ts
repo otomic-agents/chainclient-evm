@@ -1,4 +1,4 @@
-import { BigNumberish, BytesLike, ethers } from "ethers";
+import { BigNumber, BigNumberish, BytesLike, ethers } from "ethers";
 import needle from "needle"
 import bcrypt from "bcrypt"
 
@@ -8,6 +8,8 @@ import Config from "../config/Config"
 import { EvmConfig, EvmRpcClient, TransactionRequestCC } from "../interface/interface";
 import { Redis } from "ioredis";
 import { AccessListish } from "ethers/lib/utils";
+import BN from "bignumber.js";
+
 const { dev, vault } = Config
 
 let CACHE_KEY_LOCAL_PADDING_LIST = "CACHE_KEY_LOCAL_PADDING_LIST"
@@ -425,6 +427,23 @@ export default class TransactionManager {
 
         console.log("token:", token)
         console.log("balance:", (wallet.balance_value as BigNumberish).toString())
+
+        const c = new ethers.Contract(token, this.evmConfig.abi.erc20, new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url))
+        try {
+            let allowance = await c.allowance(wallet.wallet_address, transaction.to)
+
+            if (new BN((allowance as BigNumber).toString()).comparedTo(transaction.rawData["token_amount"]) == -1) {
+
+            } else {
+                console.log('allowance enough')
+                return 
+            }
+
+        } catch (error) {
+            console.log('allowance error')
+            console.log(error)
+            return
+        }
 
         let erc20Interface = new ethers.utils.Interface(this.evmConfig.abi.erc20)
         let calldata = erc20Interface.encodeFunctionData("approve", [
