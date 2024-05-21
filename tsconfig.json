@@ -2,7 +2,8 @@
     "compilerOptions": {
       "typeRoots": ["node_modules/@types"],
       "types": ["node"],
-      "esModuleInterop": true
+      "esModuleInterop": true,
+      "experimentalDecorators":true
     }
 
   }

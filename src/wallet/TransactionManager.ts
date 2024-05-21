@@ -17,18 +17,20 @@ let CACHE_KEY_LOCAL_FAILED_LIST = "CACHE_KEY_LOCAL_FAILED_LIST"
 const getGasPrice = async (flag: string, evmConfig: EvmConfig) => {
     switch (evmConfig.system_chain_id) {
         case "9006"://BSC
-            if (evmConfig.chain_id === '97')
-                return 10000000010;
-            else
-                return 5000000010;
+            // if (evmConfig.chain_id === '97')
+            //     return 10000000010;
+            // else
+            //     return 5000000010;
+            return -1;
         case "9000"://AVAX
-            return 26000000010;
+            // return 26000000010;
+            return -1;
         case "60":
             return -1;
         case "966":
             return -1;
         default:
-            break;
+            return -1;
     }
 }
 
