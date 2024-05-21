@@ -10,7 +10,7 @@ import EventFilter from "./EventFilter";
 import Redis from "ioredis";
 
 const CACHE_KEY_EVENT_HEIGHT = "CACHE_KEY_EVENT_HEIGHT";
-
+// Monitor
 export interface HeightWatcher {
   onHeightUpdate: (height: number) => void;
 }
