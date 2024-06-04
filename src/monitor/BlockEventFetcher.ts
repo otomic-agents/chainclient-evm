@@ -187,7 +187,7 @@ export default class BlockEventFetcher {
 
           let block_start = self.monitor.taskBlockEventNow + 1;
           let block_end: number =
-            self.monitor.realBlockHeight - self.monitor.taskBlockEventNow > 5
+            self.monitor.blockHeight - self.monitor.taskBlockEventNow > 5
               ? self.monitor.taskBlockEventNow + 5
               : self.monitor.blockHeight;
 
