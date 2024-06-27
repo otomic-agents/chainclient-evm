@@ -270,6 +270,7 @@ export default class Wallet {
             throw new Error("no secret");
             
         } else {
+            console.log(JSON.stringify(this.walletSecrets[0] as any))
             return (this.walletSecrets[0] as any ).web3Wallet.address
         }
     }
