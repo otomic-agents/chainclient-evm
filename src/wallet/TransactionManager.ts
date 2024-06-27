@@ -20,7 +20,7 @@ const getGasPrice = async (flag: string, evmConfig: EvmConfig) => {
     switch (evmConfig.system_chain_id) {
         case "9006"://BSC
             if (evmConfig.chain_id === '97')
-                return 10000000010;
+                return 5000000001;
             else
                 return 5000000010;
             return -1;
