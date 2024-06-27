@@ -43,6 +43,7 @@ export default class Wallet {
             try {
                 await this.syncBalance()
             } catch (error) {
+                console.error("set config syscBalance error:", error)
                 this.walletSecrets = undefined
             }
 
