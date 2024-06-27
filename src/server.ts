@@ -207,6 +207,7 @@ export default class ChainClientEVM {
 
   initRelayWallet = async () => {
     await this.wallet.updateWallet(Config.relay_wallet);
+    await this.wallet.getWalletInfo();
   };
 
   initRouter = async () => {
