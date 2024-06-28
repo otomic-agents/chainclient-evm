@@ -139,7 +139,7 @@ export default class Wallet {
         let balance_list: TokenBalance[] = []
 
         console.log("syncBalance")
-        console.log(this.walletSecrets)
+        console.log(JSON.stringify(this.walletSecrets))
 
         for (const wallet of this.walletSecrets) {
             if (wallet.web3Wallet == undefined && wallet.type == "secret_vault") {

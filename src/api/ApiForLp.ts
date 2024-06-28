@@ -21,6 +21,7 @@ import {
   watchTransferIn,
   watchTransferOut,
 } from "../serverUtils/WatcherFactory";
+import { systemOutput } from "../utils/systemOutput";
 
 const buildTransferIn = async (
   ctx: KoaCtx,
@@ -311,11 +312,11 @@ export default class ApiForLp {
             ctx.config.evm_config.abi.obridge
           );
 
-          console.log("config:");
-          console.log(ctx.config.evm_config);
+          systemOutput.info("config:");
+          systemOutput.info(JSON.stringify(ctx.config.evm_config));
 
-          console.log("obridgeIface:");
-          console.log(this.obridgeIface);
+          systemOutput.info("obridgeIface:");
+          systemOutput.info(JSON.stringify(this.obridgeIface));
         }
 
         let lpnode_server_url = (ctx.request.body as any).lpnode_server_url;
@@ -413,7 +414,7 @@ export default class ApiForLp {
         console.log(command_transfer_confirm);
         console.log("gas:");
         console.log(gas);
-
+  
         if (this.obridgeIface == undefined) {
           ctx.response.body = {
             code: 30208,

@@ -8,7 +8,8 @@ import {
 import BlockEventFetcher from "./BlockEventFetcher";
 import EventFilter from "./EventFilter";
 import Redis from "ioredis";
-
+import { throttledLog } from '../utils/comm';
+const HEIGHTLOG = new throttledLog();
 const CACHE_KEY_EVENT_HEIGHT = "CACHE_KEY_EVENT_HEIGHT";
 // Monitor
 export interface HeightWatcher {
@@ -175,7 +176,7 @@ export default class Monitor {
   };
 
   update_height = async (height: number) => {
-    console.log("update_height:", height);
+    HEIGHTLOG.log(`update_height: ${height}`);
     this.statusBlockHeight = height;
 
     if (!this.modeHistory) {

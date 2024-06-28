@@ -188,11 +188,6 @@ export default class BlockEventFetcher {
           let block_start = self.monitor.taskBlockEventNow + 1;
           let block_end: number = (self.monitor.blockHeight - self.monitor.taskBlockEventNow) > 5 ? ( self.monitor.taskBlockEventNow + 5 ) : self.monitor.blockHeight;
 
-          console.log('self.monitor.blockHeight', self.monitor.blockHeight)
-          console.log('self.monitor.taskBlockEventNow', self.monitor.taskBlockEventNow)
-          console.log('block_end', block_end)
-
-
           if (block_end == undefined)
             throw new Error(
               "block event fetcher state error: block_end undefined"
