@@ -1,5 +1,6 @@
 import Koa from "koa";
 import bodyParser from "koa-bodyparser";
+import koaLogger from 'koa-logger'; 
 import Router from "@koa/router";
 
 import Redis, { RedisOptions } from "ioredis";
@@ -333,6 +334,7 @@ export default class ChainClientEVM {
     app.context.rpcClient = this.evmRpcClient;
 
     app.use(bodyParser({}));
+    app.use(koaLogger());
     app.use(this.router.routes()).use(this.router.allowedMethods());
     app.listen(Config.server_config.port);
 

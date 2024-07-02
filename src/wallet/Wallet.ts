@@ -3,6 +3,7 @@ import { Redis } from 'ioredis'
 import { EvmConfig, EvmRpcClient, TokenInfo, WalletConfig } from '../interface/interface'
 import sleep from '../serverUtils/Sleeper'
 import { getKey } from '../serverUtils/SecretVaultUtils'
+import { systemOutput } from '../utils/systemOutput'
 
 const CACHE_KEY_walletSecrets = "CACHE_KEY_walletSecrets"
 
@@ -194,13 +195,12 @@ export default class Wallet {
 
                 startCount++
                 try {
-                    console.log('fetch', balance.wallet_address)
+                    systemOutput.debug('fetch', "wallet:",balance.wallet_address, "token:",balance.token)
                     balance.balance_value = await this.tokenMap[balance.token].balanceOf(balance.wallet_address)
-                    console.log('balance', balance.balance_value)
                     if(balance.decimals == undefined) {
                         balance.decimals = await this.tokenMap[balance.token].decimals()
-                        console.log('decimals', balance.decimals)
                     }
+                    systemOutput.debug(JSON.stringify(balance))
                 } catch (error) {
                     console.error("fetch balance error")
                     console.error(error)
