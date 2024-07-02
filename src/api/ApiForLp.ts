@@ -233,6 +233,7 @@ export default class ApiForLp {
   @cacheByFirstParamHashDecorator()
   private registerLpnode(requestBody, monitor, config) {
     let lpnode_server_url = requestBody.lpnode_server_url;
+    systemOutput.debug(lpnode_server_url)
     if (lpnode_server_url == undefined) {
       return {
         code: 30207,
@@ -318,9 +319,6 @@ export default class ApiForLp {
           systemOutput.info("obridgeIface:");
           systemOutput.info(JSON.stringify(this.obridgeIface));
         }
-
-        let lpnode_server_url = (ctx.request.body as any).lpnode_server_url;
-        console.log("lpnode_server_url:", lpnode_server_url);
         ctx.response.body = this.registerLpnode(
           ctx.request.body,
           ctx.monitor,
@@ -343,6 +341,13 @@ export default class ApiForLp {
         console.log("gas:");
         console.log(gas);
 
+        // systemOutput.debug("Don't want to operate")
+        // ctx.response.body = {
+        //   code: 30208,
+        //   message: "obridgeIface not found",
+        // };
+        // return;
+        
         if (this.obridgeIface == undefined) {
           ctx.response.body = {
             code: 30208,

@@ -25,7 +25,9 @@
     "lodash": "^4.17.21",
     "needle": "^3.3.1",
     "tslog": "^4.9.3",
-    "web3-eth-abi": "^1.8.0"
+    "web3-eth-abi": "^1.8.0",
+    "xprofiler": "^2.6.1",
+    "xtransit": "^2.5.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

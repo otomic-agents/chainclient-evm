@@ -124,6 +124,7 @@ export default class BlockEventFetcher {
     this.monitor.fetchBlockRunning = true;
     console.log("startFetch");
 
+
     if (this.monitor.taskBlockEventNow == undefined) {
       if (this.monitor.evmConfig == undefined)
         throw new Error("evmConfig not found");
@@ -139,6 +140,7 @@ export default class BlockEventFetcher {
     }
 
     let blockFetchTaskList = this.monitor.blockFetchTaskList;
+
     let self = this;
 
     console.log("create dispatcher");

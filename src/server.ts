@@ -23,6 +23,8 @@ import {
   watchTransferOut,
 } from "./serverUtils/WatcherFactory";
 import RPCGeter from "./serverUtils/RPCGeter";
+import { UniqueIDGenerator } from "./utils/comm";
+import { systemOutput } from "./utils/systemOutput";
 
 export default class ChainClientEVM {
   router: Router | undefined;
@@ -34,6 +36,14 @@ export default class ChainClientEVM {
   syncer: StatusSyncer | undefined;
 
   evmRpcClient: EvmRpcClient | undefined;
+  evmTxRpcClient: EvmRpcClient | undefined;
+  
+  private transportSet: Map<number, HTTPTransport> = new Map();
+  private transportTxSet: Map<number, HTTPTransport> = new Map();
+  private activeRequestManager?: RequestManager;
+  private activeTransportId?: number; 
+  private lastRpcUrl: string;
+  private callCount: number = 0;
 
   rpcUrl: string = Config.evm_config.rpc_url;
 
@@ -45,6 +55,8 @@ export default class ChainClientEVM {
     await this.initDB();
 
     await this.initEvmRpcClient();
+
+    await this.initEvmTxRpcClient();
 
     await this.initModule();
 
@@ -86,18 +98,107 @@ export default class ChainClientEVM {
     }
     Config.evm_config.rpc_url = this.rpcUrl;
   };
+  scheduleCloseTransport = async (transportId) => {
+    systemOutput.debug("close Transport id:", transportId)
+    setTimeout(() => {
+      let transport = this.transportSet.get(transportId)
+      if (transport && typeof transport.close === 'function') {
+        transport.close()
+      }
+      this.transportSet.delete(transportId)
+    }, 1000 * 10)
+  }
+  scheduleCloseTxTransport = async (transportId) => {
+    systemOutput.debug("close Transport ,type tx Transport , id:", transportId)
+    setTimeout(() => {
+      let transport = this.transportTxSet.get(transportId)
+      if (transport && typeof transport.close === 'function') {
+        transport.close()
+      }
+      this.transportTxSet.delete(transportId)
+    }, 1000 * 10)
+  }
+  
+  initEvmTxRpcClient = async()=>{
+    this.lastRpcUrl = this.rpcUrl;
+    console.log("initEvmTxRpcClient");
+    let  currTransportId = UniqueIDGenerator.getNextID();
+    const transport = new HTTPTransport(this.rpcUrl, {
+      headers: { "Accept-Encoding": "gzip" },
+    });
+    this.transportTxSet.set(currTransportId, transport)
+    this.evmTxRpcClient = {
+      get: (): Client => {
+        systemOutput.debug('create new Transport', currTransportId + 1)
+        this.scheduleCloseTxTransport(currTransportId)
+        this.lastRpcUrl = this.rpcUrl;
+        const newTransportId = UniqueIDGenerator.getNextID();
+        const new_transport = new HTTPTransport(this.rpcUrl, {
+          headers: { "Accept-Encoding": "gzip" },
+        });
+        this.transportTxSet.set(newTransportId, new_transport);
+        currTransportId = newTransportId;
+        const requestManager = new RequestManager([this.transportTxSet.get(currTransportId)]);
+        let client = new Client(requestManager);
+        return client;
+      },
+      saveBlack: async () => {
+        this.rpcGeter.addBlack(this.rpcUrl);
+        this.changeUrl();
+      },
 
+      saveBlackTemporary: async () => {
+        this.rpcGeter.addBlack(this.rpcUrl);
+        this.changeUrl();
+
+        let thisUrl = `${this.rpcUrl}`;
+        setTimeout(() => {
+          this.rpcGeter.blackList = this.rpcGeter.blackList.filter(
+            (item) => item != thisUrl
+          );
+          console.log("this.rpcGeter.blackList", this.rpcGeter.blackList);
+        }, 10 * 60 * 1000);
+      },
+    }
+  }
   initEvmRpcClient = async () => {
+    this.lastRpcUrl = this.rpcUrl;
     console.log("initEvmRpcClient");
+    let  currTransportId = UniqueIDGenerator.getNextID();
+    const transport = new HTTPTransport(this.rpcUrl, {
+      headers: { "Accept-Encoding": "gzip" },
+    });
+    this.transportSet.set(currTransportId, transport)
     this.evmRpcClient = {
       /* Prevent blockage of subsequent program execution when frequency limiting,
             no response, etc. occur, and create a new connection for request each time */
-      get: () => {
-        let transport = new HTTPTransport(this.rpcUrl as string, {
-          headers: { "Accept-Encoding": "gzip" },
-        });
-        let requestManager = new RequestManager([transport]);
-        let client = new Client(requestManager);
+      get: (): Client => {
+        if (this.callCount >= 100 || this.lastRpcUrl !== this.rpcUrl) {
+          systemOutput.debug('create new Transport', currTransportId + 1)
+          this.scheduleCloseTransport(currTransportId)
+          this.lastRpcUrl = this.rpcUrl;
+          const newTransportId = UniqueIDGenerator.getNextID();
+          const new_transport = new HTTPTransport(this.rpcUrl, {
+            headers: { "Accept-Encoding": "gzip" },
+          });
+          this.transportSet.set(newTransportId, new_transport);
+          currTransportId = newTransportId;
+          this.callCount = 0;
+          if (this.activeTransportId !== currTransportId) {
+            this.activeRequestManager = new RequestManager([this.transportSet.get(currTransportId)]);
+            this.activeTransportId = currTransportId;
+          }
+        }
+        else {
+          this.activeTransportId = currTransportId;
+          if (!this.activeRequestManager) {
+            systemOutput.debug('create new Transport RequestManager', currTransportId)
+            this.activeRequestManager = new RequestManager([this.transportSet.get(currTransportId)]);
+          }
+        }
+
+        this.callCount++;
+        let client = new Client(this.activeRequestManager!);
         return client;
       },
 
@@ -142,7 +243,7 @@ export default class ChainClientEVM {
     await this.transactionManager.setConfig(
       this.redis,
       this.wallet,
-      this.evmRpcClient,
+      this.evmTxRpcClient,
       Config.evm_config
     );
 
