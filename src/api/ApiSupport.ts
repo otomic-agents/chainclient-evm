@@ -4,7 +4,8 @@ import { CallbackUrlBox, EvmConfig, EvmRpcClient } from '../interface/interface'
 import Monitor from '../monitor/Monitor'
 import { watchConfirmIn, watchConfirmOut, watchRefundIn, watchRefundOut, watchReputation, watchTransferIn, watchTransferOut } from '../serverUtils/WatcherFactory'
 import needle from 'needle'
-
+import * as _ from "lodash"
+import { systemOutput } from '../utils/systemOutput'
 function getFlagHeight(num: number): number {
     return Math.ceil(num / 5) * 5;
 }
@@ -55,6 +56,7 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
 
                     if (doPost) {
                         try {
+                            systemOutput.debug("send onHeightUpdate ", on_height_update_url);
                             needle.post(on_height_update_url, 
                                 {
                                     type: 'update_height',
@@ -68,7 +70,7 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
                                 },
                                 (err, resp) => {
                                 console.log('error:', err)
-                                console.log('resp:', resp.body)
+                                console.log('resp:', _.get(resp,"body",undefined) )
                             })
                         } catch (error) {
                             console.error(error)
