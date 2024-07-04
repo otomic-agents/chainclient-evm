@@ -56,14 +56,13 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
 
                     if (doPost) {
                         try {
-                            systemOutput.debug("send onHeightUpdate ", on_height_update_url);
+                            systemOutput.debug("send onHeightUpdate ", on_height_update_url, height);
                             const sendData = {
                                 type: 'update_height',
                                 height: height,
                                 data: blockNumberCache[height].data
                             }
-                            systemOutput.debug(sendData);
-                            needle.post(on_height_update_url, 
+                            needle.post(on_height_update_url,
                                 sendData,
                                 {
                                     headers: {
@@ -71,9 +70,11 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
                                     }
                                 },
                                 (err, resp) => {
-                                console.log('error:', err)
-                                console.log('resp:', _.get(resp,"body",undefined) )
-                            })
+                                    if (err != null) {
+                                        console.log('error:', err)
+                                        console.log('resp:', _.get(resp, "body", undefined))
+                                    }
+                                })
                         } catch (error) {
                             console.error(error)
                             return
