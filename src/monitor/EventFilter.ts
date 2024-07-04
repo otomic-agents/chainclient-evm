@@ -2,6 +2,7 @@ import Web3EthAbi from "web3-eth-abi";
 import Monitor from "./Monitor";
 import { DispatcherDataHolder, FilterInfo } from "../interface/interface";
 import sleep from "../serverUtils/Sleeper";
+import { systemOutput } from "../utils/systemOutput";
 
 export default class EventFilter {
   monitor: Monitor;
@@ -41,6 +42,7 @@ export default class EventFilter {
     let self = this;
     let checkEvent = async () => {
       let blockFetchTaskList = dispatcherDataHolder.event_list;
+      systemOutput.debug("process event", filter_info.topic_string);
       while (blockFetchTaskList[0]?.step == 3) {
         let task = blockFetchTaskList.shift();
 
@@ -121,6 +123,7 @@ export default class EventFilter {
         //     await self.monitor.update_height(parseInt(events[events.length - 1].blockNumber, 16))
         // } else {
         try {
+          systemOutput.debug("task.event_data length", task.event_data.length)
           await self.monitor.update_height(
             parseInt(
               task.event_data[task.event_data.length - 1].blockNumber,
@@ -128,7 +131,7 @@ export default class EventFilter {
             )
           );
         } catch (error) {
-          console.log("event_data length error");
+          systemOutput.error("update_height", error);
         }
 
         // }

@@ -1,6 +1,7 @@
 import Monitor from "./Monitor";
 import { BlockFetchTask, EvmRpcClient } from "../interface/interface";
 import { ethers } from "ethers";
+import { systemOutput } from "../utils/systemOutput";
 
 const get_events = async (
   evmRpcClient: EvmRpcClient,
@@ -58,8 +59,7 @@ const startFetchEvent = (
         return;
       }
       task.step = 2;
-
-      console.log("fetcher task", task.block_start, task.block_end);
+      systemOutput.debug("Fetcher task", "start:", task.block_start, "end:", task.block_end);
 
       await get_events(
         evmRpcClient,
@@ -150,7 +150,7 @@ export default class BlockEventFetcher {
       blockFetchTaskList.forEach((element) => {
         if (element.step != 3) task_number++;
       });
-      console.log("task queue length", task_number);
+      systemOutput.debug("task queue length", task_number);
       if (task_number < 10) {
         //fetch height
         await self.blockHeight((err: Error, result: any) => {
@@ -235,21 +235,26 @@ export default class BlockEventFetcher {
 
     let result;
     try {
-      // console.log('fetch height')
+      systemOutput.debug('Fetch height')
       result = await this.monitor.evmRpcClient.get().request(
         {
-          // jsonrpc: "2.0",
           method: "eth_blockNumber",
           params: [],
-          // id: 0
         },
-        0
+        1000 * 8
       );
     } catch (error) {
       console.error(error);
       callback(error, null);
       return;
     }
+    let printHeight = (hexString :string)=>{
+      if (!hexString||hexString==""){
+        return "---"
+      }
+      return parseInt(result.slice(2), 16).toString()
+    }
+    systemOutput.debug("The latest blockchain height is:", printHeight(result))
     callback(null, result);
   };
 }

@@ -1,6 +1,7 @@
 import needle from "needle";
 import Monitor from "../monitor/Monitor";
 import { EvmConfig, FilterInfo } from "../interface/interface";
+import { systemOutput } from "../utils/systemOutput";
 
 const createCallback = (
   url: string,
@@ -58,9 +59,9 @@ const createCallback = (
     event.event_parse = event.eventParse;
     event.chain_id = config.system_chain_id;
 
-    console.log("on event callback");
-    console.log(event);
-    console.log(url);
+    systemOutput.debug("on event callback");
+    systemOutput.debug(event);
+    
 
     if (merge) {
       mergeData(event);
@@ -68,6 +69,7 @@ const createCallback = (
     }
 
     try {
+      systemOutput.debug(`notify event`, url)
       needle.post(
         url,
         event,

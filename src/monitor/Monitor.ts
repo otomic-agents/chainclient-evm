@@ -176,7 +176,7 @@ export default class Monitor {
   };
 
   update_height = async (height: number) => {
-    HEIGHTLOG.log(`update_height: ${height}`);
+    HEIGHTLOG.log(`set height state: ${height}`);
     this.statusBlockHeight = height;
 
     if (!this.modeHistory) {
