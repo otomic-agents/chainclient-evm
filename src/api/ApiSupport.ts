@@ -57,12 +57,14 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
                     if (doPost) {
                         try {
                             systemOutput.debug("send onHeightUpdate ", on_height_update_url);
+                            const sendData = {
+                                type: 'update_height',
+                                height: height,
+                                data: blockNumberCache[height].data
+                            }
+                            systemOutput.debug(sendData);
                             needle.post(on_height_update_url, 
-                                {
-                                    type: 'update_height',
-                                    height: height,
-                                    data: blockNumberCache[height].data
-                                },
+                                sendData,
                                 {
                                     headers: {
                                         "Content-Type": "application/json"
