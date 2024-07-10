@@ -74,7 +74,11 @@ const startFetchEvent = (
             // console.log('get_events result')
             // console.log(result)
             task.event_data = result;
+            if (!result) {
+              systemOutput.warn("result is null", result)
+            }
             task.step = 3;
+            
             setTimeout(run, 1);
           } else {
             task.step = 1;
