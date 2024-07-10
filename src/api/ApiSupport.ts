@@ -1,4 +1,3 @@
-import bodyParser from 'koa-bodyparser'
 import Router from '@koa/router'
 import { CallbackUrlBox, EvmConfig, EvmRpcClient } from '../interface/interface'
 import Monitor from '../monitor/Monitor'
@@ -6,6 +5,7 @@ import { watchConfirmIn, watchConfirmOut, watchRefundIn, watchRefundOut, watchRe
 import needle from 'needle'
 import * as _ from "lodash"
 import { systemOutput } from '../utils/systemOutput'
+import { sha256 } from '../utils/hash'
 function getFlagHeight(num: number): number {
     return Math.ceil(num / 5) * 5;
 }
@@ -117,6 +117,16 @@ const startReputationHistoryTask = async (startBlock: number, endBlock: number, 
 }
 
 export default class ApiSupport {
+
+    registerCache: Map<string, Map<string, boolean>> = new Map()
+
+    constructor() {
+        this.registerCache.set('support', new Map());
+        this.registerCache.set('support_history', new Map());
+        this.registerCache.set('support_reputation', new Map());
+        this.registerCache.set('support_reputation_history', new Map());
+    }
+
     private _linkRouter = (router: Router, config: EvmConfig) => {
         router.post(`/support/history`, async (ctx, next) => {
             console.log('on /support/history', ctx.request.body)
@@ -152,12 +162,32 @@ export default class ApiSupport {
                 return
             }
 
+            let cacheKey = sha256(JSON.stringify({
+                startBlock: startBlock,
+                endBlock: endBlock,
+                callbackUrl: callbackUrl,
+                merge: merge
+            }))
+
+            let cache = this.registerCache.get('support_history')
+            if (cache.has(cacheKey)) {
+                ctx.response.body = {
+                    code: 30209,
+                    message: 'callbackUrl is already registered'
+                }
+                systemOutput.debug('callbackUrl is already registered for support history endpoind', startBlock, endBlock, callbackUrl, merge)
+                return
+            }
+
             startHistoryTask(startBlock, endBlock, callbackUrl, ctx.rpcClient, config, merge)
 
             ctx.response.body = {
                 code: 200,
                 message: 'history task started'
             }
+
+            cache.set(cacheKey, true)
+            systemOutput.debug('new support history registered', startBlock, endBlock, callbackUrl, merge)
         })
 
         router.post(`/support/register`, async (ctx, next) => {
@@ -177,6 +207,22 @@ export default class ApiSupport {
                 }
                 return
             }
+
+            let cacheKey = sha256(JSON.stringify({
+                callbackUrl: callbackUrl,
+                merge: merge
+            }))
+
+            let cache = this.registerCache.get('support')
+            if (cache.has(cacheKey)) {
+                ctx.response.body = {
+                    code: 30209,
+                    message: 'callbackUrl is already registered'
+                }
+                systemOutput.debug("callbackUrl is already registered for support endpoind", callbackUrl, merge)
+                return
+            }
+
             const mergeData = watchHeight(callbackUrl, ctx.monitor, false)
 
             watchTransferOut(ctx.monitor, callbackUrl.on_transfer_out, config, merge, mergeData)
@@ -186,12 +232,13 @@ export default class ApiSupport {
             watchRefundOut(ctx.monitor, callbackUrl.on_refunded_out, config, merge, mergeData)
             watchRefundIn(ctx.monitor, callbackUrl.on_refunded_in, config, merge, mergeData)
 
-
-
             ctx.response.body = {
                 code: 200,
                 message: 'register succeed'
             }
+
+            cache.set(cacheKey, true)
+            systemOutput.debug('new support registered', callbackUrl, merge)
         })
 
         router.post(`/support/history_reputation`, async (ctx, next) => {
@@ -228,12 +275,32 @@ export default class ApiSupport {
                 return
             }
 
+            let cacheKey = sha256(JSON.stringify({
+                startBlock: startBlock,
+                endBlock: endBlock,
+                callbackUrl: callbackUrl,
+                merge: merge
+            }))
+
+            let cache = this.registerCache.get('support_reputation_history')
+            if (cache.has(cacheKey)) {
+                ctx.response.body = {
+                    code: 30209,
+                    message: 'callbackUrl is already registered'
+                }
+                systemOutput.debug('callbackUrl is already registered for support reputation history endpoind', startBlock, endBlock, callbackUrl, merge)
+                return
+            }
+            
             startReputationHistoryTask(startBlock, endBlock, callbackUrl, ctx.rpcClient, config, merge)
 
             ctx.response.body = {
                 code: 200,
                 message: 'history task started'
             }
+
+            cache.set(cacheKey, true)
+            systemOutput.debug('new support reputation history registered', startBlock, endBlock, callbackUrl, merge)
         })
 
         router.post(`/support/register_reputation`, async (ctx, next) => {
@@ -253,6 +320,21 @@ export default class ApiSupport {
                 return
             }
 
+            let cacheKey = sha256(JSON.stringify({
+                callbackUrl: callbackUrl,
+                merge: merge
+            }))
+
+            let cache = this.registerCache.get('support_reputation')
+            if (cache.has(cacheKey)) {
+                ctx.response.body = {
+                    code: 30209,
+                    message: 'callbackUrl is already registered'
+                }
+                systemOutput.debug("callbackUrl is already registered for support reputation endpoind", callbackUrl, merge)
+                return
+            }
+
             const mergeData = watchHeight(callbackUrl, ctx.monitor, true)
             
             watchReputation(ctx.monitor, callbackUrl.on_reputation, config, merge, mergeData)
@@ -263,6 +345,9 @@ export default class ApiSupport {
                 code: 200,
                 message: 'register succeed'
             }
+
+            cache.set(cacheKey, true)
+            systemOutput.debug('new support reputation registered', callbackUrl, merge)
         })
     }
     public get linkRouter() {
