@@ -34,13 +34,21 @@ export class HttpRpcClient {
         try {
             const response = await axios.post(this.url, payload, config);
             systemOutput.debug(`Rpc <- Id-${_.get(response, "data.id", undefined)}`)
+            const error = _.get(response, "data.error", undefined)
+            /**
+                    jsonrpc: '2.0',
+                    id: 34,
+                    error: {
+                        code: -32005,
+                        message: 'limit exceeded'
+                    }
+             */
+            if (error != undefined) {
+                throw new Error(`Request failed with message: ${_.get(error, "message", "")}`)
+            }
             let result = _.get(response, "data.result", undefined)
-            if (!result) {
-                systemOutput.debug("result is empty")
-                systemOutput.debug("data:", _.get(response, "data"));
-                const statusCode = _.get(response, "status", 0);
-                systemOutput.debug("statusCode :", statusCode);
-                systemOutput.debug("data.error", _.get(response, "data.error", undefined))
+            if (!result || result == undefined) {
+                throw new Error(`Request failed,result is empty ,status code: ${_.get(response, "status", 0)} ,response body ${_.get(response, "data")}`)
             }
             return result
         } catch (error) {
