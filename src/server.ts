@@ -95,6 +95,7 @@ export default class ChainClientEVM {
       /* Prevent blockage of subsequent program execution when frequency limiting,
             no response, etc. occur, and create a new connection for request each time */
       get: (): Client => {
+        systemOutput.debug("rpc url is: ",this.rpcUrl)
         let client: any = new HttpRpcClient(this.rpcUrl)
         return client;
       },

@@ -34,7 +34,15 @@ export class HttpRpcClient {
         try {
             const response = await axios.post(this.url, payload, config);
             systemOutput.debug(`Rpc <- Id-${_.get(response, "data.id", undefined)}`)
-            return _.get(response, "data.result", undefined)
+            let result = _.get(response, "data.result", undefined)
+            if (!result) {
+                systemOutput.debug("result is empty")
+                systemOutput.debug("data:", _.get(response, "data"));
+                const statusCode = _.get(response, "status", 0);
+                systemOutput.debug("statusCode :", statusCode);
+                systemOutput.debug("data.error", _.get(response, "data.error", undefined))
+            }
+            return result
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 throw new Error(`Request failed with status ${error.response?.status}: ${error.message}`);
