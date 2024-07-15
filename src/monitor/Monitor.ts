@@ -40,6 +40,7 @@ export default class Monitor {
 
   realBlockHeight: number | undefined;
   blockHeight: number | undefined;
+  blockHeightUpdateTime: number = 0;
 
   modeHistory: boolean = false;
 
@@ -178,7 +179,7 @@ export default class Monitor {
   update_height = async (height: number) => {
     HEIGHTLOG.log(`set height state: ${height}`);
     this.statusBlockHeight = height;
-
+    this.blockHeightUpdateTime = new Date().getTime();
     if (!this.modeHistory) {
       if (this.redis == undefined || this.evmConfig == undefined)
         throw new Error("db state error");
@@ -196,6 +197,8 @@ export default class Monitor {
 
   getStatus = async () => {
     return {
+      block_height_update_time: this.blockHeightUpdateTime,
+      chain_block_height: this.realBlockHeight,
       block_height: this.statusBlockHeight,
       watcher: this.statusWatcher,
     };
