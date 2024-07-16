@@ -196,6 +196,7 @@ export default class Monitor {
   };
 
   getStatus = async () => {
+    // view on dashboard
     return {
       block_height_update_time: this.blockHeightUpdateTime,
       chain_block_height: this.realBlockHeight,
