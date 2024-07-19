@@ -108,17 +108,16 @@ export default class EventFilter {
                             })
                         }))
                     })
-                    if (downloadTasks.length<=0){
-                        break;
-                    }
-                    systemOutput.debug(`down load event data: ${task.block_start},${task.block_end}`)
-                    try {
-                        await Promise.all(downloadTasks);
-                    } catch (error) {
-                        systemOutput.error('An error occurred while processing the promises:', error);
-                        systemOutput.warn(`retry process ${task.block_start}-${task.block_end}`)
-                        blockFetchTaskList.unshift(task)
-                        break;
+                    if (downloadTasks.length>0){
+                        systemOutput.debug(`down load event data: ${task.block_start},${task.block_end}`)
+                        try {
+                            await Promise.all(downloadTasks);
+                        } catch (error) {
+                            systemOutput.error('An error occurred while processing the promises:', error);
+                            systemOutput.warn(`retry process ${task.block_start}-${task.block_end}`)
+                            blockFetchTaskList.unshift(task)
+                            break;
+                        } 
                     }
                     events.forEach((log: any) => {
                         const tx = dataMap.get(log.transactionHash).tx

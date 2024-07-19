@@ -71,9 +71,17 @@ export default class ChainClientEVM {
       port: parseInt(Config.redis_config.port as string),
       db: Config.redis_config.db,
       password: Config.redis_config.pwd,
+      retryStrategy: () => {
+        const delay = 3000;
+        return delay;
+      },
     };
 
     this.redis = new Redis(opt);
+    setInterval(() => {
+      this.redis.ping()
+      systemOutput.debug("send redis ping")
+    }, 1000 * 10)
   };
 
   changeUrl = async () => {
@@ -150,8 +158,16 @@ export default class ChainClientEVM {
       port: parseInt(Config.redis_config.port as string),
       db: Config.redis_config.statusDB,
       password: Config.redis_config.pwd,
+      retryStrategy: () => {
+        const delay = 3000;
+        return delay;
+      },
     };
     let statusRedis = new Redis(opt);
+    setInterval(() => {
+      statusRedis.ping()
+      systemOutput.debug("send redis ping")
+    }, 1000 * 10)
 
     await this.syncer.setTarget(
       this.monitor,
