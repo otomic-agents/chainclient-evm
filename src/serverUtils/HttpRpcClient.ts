@@ -33,7 +33,7 @@ export class HttpRpcClient {
 
         try {
             const response = await axios.post(this.url, payload, config);
-            systemOutput.debug(`Rpc <- Id-${_.get(response, "data.id", undefined)}`)
+            // systemOutput.debug(`Rpc <- Id-${_.get(response, "data.id", undefined)}`)
             const error = _.get(response, "data.error", undefined)
             /**
                     jsonrpc: '2.0',
