@@ -18,6 +18,7 @@ import Wallet from "./wallet/Wallet";
 import TransactionManager from "./wallet/TransactionManager";
 import StatusSyncer from "./status/StatusSyncer";
 import {
+  watchConfirmIn,
   watchConfirmOut,
   watchRefundOut,
   watchTransferIn,
@@ -191,9 +192,10 @@ export default class ChainClientEVM {
         undefined
       );
     }
-    // if (Config.relay_server_url.on_transfer_in != undefined && Config.relay_server_url.on_transfer_in != "") {
-    //     watchTransferIn(this.monitor, Config.relay_server_url.on_transfer_in, Config.evm_config, false, undefined)
-    // }
+    if (Config.relay_server_url.on_confirm_in != undefined && Config.relay_server_url.on_confirm_in != "") {
+      systemOutput.debug("watch confirm in ", Config.relay_server_url.on_confirm_in, "");
+      watchConfirmIn(this.monitor, Config.relay_server_url.on_confirm_in, Config.evm_config, false, undefined)
+    }
     if (
       Config.relay_server_url.on_confirm != undefined &&
       Config.relay_server_url.on_confirm != ""

@@ -296,7 +296,7 @@ export default class ApiForRelay{
 
         router.post(`/evm-client-${config.system_chain_id}/relay/behalf/confirm_out`, async (ctx, next) => {
             let transaction_type = (ctx.request.body as any).transaction_type
-            let command_transfer_confirm = (ctx.request.body as any).command_transfer_in_confirm
+            let command_transfer_confirm = (ctx.request.body as any).command_transfer_out_confirm
             let gas = (ctx.request.body as any).gas
     
             console.log("on confirm out")

@@ -145,7 +145,7 @@ export default class EventFilter {
                             )
                         );
                     } catch (error) {
-                        systemOutput.error("update_height", error);
+                        systemOutput.error("update_height error:", error, task.event_data);
                     }
                 }
             } catch (e) {
