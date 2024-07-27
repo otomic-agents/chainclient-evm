@@ -9,9 +9,12 @@ import { EvmConfig, EvmRpcClient, TransactionRequestCC } from "../interface/inte
 import { Redis } from "ioredis";
 import { AccessListish } from "ethers/lib/utils";
 import BN from "bignumber.js";
-
+import { systemOutput } from "../utils/systemOutput";
+import * as _ from "lodash"
+import { throttledLog } from "../utils/comm";
 const { dev, vault } = Config
 
+const LOOP_STATUS_LOG = new throttledLog();
 let CACHE_KEY_LOCAL_PADDING_LIST = "CACHE_KEY_LOCAL_PADDING_LIST"
 let CACHE_KEY_LOCAL_SUCCEED_LIST = "CACHE_KEY_LOCAL_SUCCEED_LIST"
 let CACHE_KEY_LOCAL_FAILED_LIST = "CACHE_KEY_LOCAL_FAILED_LIST"
@@ -65,6 +68,7 @@ class TransactionCheckLoop {
     evmRpcClient: EvmRpcClient
     evmConfig: EvmConfig
     failNum: number
+    errorMessage: string[] = new Array();
 
     constructor(wallet: Wallet, paddingListHolder: TransactionManager, evmRpcClient: EvmRpcClient, evmConfig: EvmConfig){
         this.wallet = wallet
@@ -72,10 +76,26 @@ class TransactionCheckLoop {
         this.evmRpcClient = evmRpcClient
         this.evmConfig = evmConfig
         this.failNum = 0
-
+        this.statusReport()
         this.check()
     }
-
+    private pushErrorMessage(message: string) {
+        // Check if the array length is already at its limit
+        if (this.errorMessage.length >= 50) {
+            // Remove the oldest message (first element) before adding the new one
+            this.errorMessage.shift();
+        }
+        this.errorMessage.push(message)
+    }
+    private statusReport() {
+        if (this.errorMessage.length > 0) {
+            systemOutput.warn("transaction execute faild info:")
+            console.table(this.errorMessage)
+        }
+        setTimeout(() => {
+            this.statusReport()
+        }, 1000 * 20)
+    }
     vaultSign = (txData: any, evmConfig: EvmConfig, secert_id: string) => new Promise(async (result, reject) => {
 
         let timestamp = (new Date().getTime() / 1000).toFixed(0);
@@ -211,10 +231,12 @@ class TransactionCheckLoop {
     })
 
     check = async() => {
-
         const lfirstDataString = this.paddingListHolder.getFirst()
-        if(lfirstDataString == undefined){
-            setTimeout(this.check, 3000)
+        if (lfirstDataString == undefined) {
+            setTimeout(() => {
+                LOOP_STATUS_LOG.log(`Transaction Loop still running ${new Date().getTime()}`)
+                this.check()
+            }, 3000)
             return
         }
         const lfirstData: TransactionRequestCC = JSON.parse(lfirstDataString)
@@ -225,16 +247,13 @@ class TransactionCheckLoop {
         //dev test
         // lfirst.transactionHash = "0xb5e12372396142bc6d02a60e66607060cf8e455ee339c6b4e67a7d2c66cb6227"
 
-        console.log("lfirst:")
-        console.log(lfirst)
+        systemOutput.debug("lfirst:")
+        systemOutput.debug(lfirst)
 
         lfirst.chainId =  typeof lfirst.chainId === 'string' ? parseInt(lfirst.chainId) : lfirst.chainId
-        //check tx state
-        //switch send
-        //or
-        //wait(check state) and update DB
-        if(lfirst.transactionHash == undefined) {
-            console.group("send new transaction")
+        
+        if (lfirst.transactionHash == undefined) {
+            systemOutput.debug("send new transaction")
             //get gas_price
             let gas_price = await getGasPrice(lfirst.gasPrice as string, this.evmConfig)
             if (gas_price == -1) {
@@ -255,8 +274,8 @@ class TransactionCheckLoop {
                 console.log(gas_limit)
 
                 lfirst.gasLimit = gas_limit.add(10000)
-                console.log('lfirst:')
-                console.log(lfirst)
+                systemOutput.debug('lfirst send transaction')
+                systemOutput.debug(lfirst)
 
                 let transactionSended
 
@@ -283,10 +302,7 @@ class TransactionCheckLoop {
                     client = (client as ethers.Wallet).connect(provider)
                     transactionSended = await client.sendTransaction(lfirst)
                 }
-
-
-                console.log("transactionSended:")
-                console.log(transactionSended)
+                systemOutput.debug("transactionSended:",transactionSended)
 
                 lfirstData.transactionHash = transactionSended.hash
                 lfirstData.sended = transactionSended
@@ -308,34 +324,34 @@ class TransactionCheckLoop {
                         this.failNum = 0
                     }
                 }
-                console.error(err)
+                systemOutput.error(err)
             }
-
-            console.groupEnd()
         } else {
-            console.log("transactionHash:", lfirst.transactionHash)
-            let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
-            let transactionReceipt = await provider.getTransactionReceipt(lfirst.transactionHash)
-            console.log("transactionReceipt:")
-            console.log(transactionReceipt)
+            try {
+                console.log("transactionHash:", lfirst.transactionHash)
+                let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
+                let transactionReceipt = await provider.getTransactionReceipt(lfirst.transactionHash)
+                systemOutput.debug("transactionReceipt:")
+                systemOutput.debug(transactionReceipt);
 
-            if(transactionReceipt != undefined && transactionReceipt != null){
-                lfirstData.transactionReceipt = transactionReceipt
-
-                if(transactionReceipt.status == 1) {
-                    // update queue
-                    this.paddingListHolder.onTransactionNowSucceed(lfirstData)
-
-                } else {
-                    //TODO Throws Error
+                if (transactionReceipt != undefined && transactionReceipt != null) {
+                    lfirstData.transactionReceipt = transactionReceipt
+                    if (transactionReceipt.status == 1) {
+                        this.paddingListHolder.onTransactionNowSucceed(lfirstData)
+                    } else {
+                        //TODO Throws Error
+                        this.pushErrorMessage(`transaction execution failed ,receipt status is not [1]`)
+                    }
                 }
+            } catch (e) {
+                this.pushErrorMessage(`transaction execution failed ${JSON.stringify(e)}`)
+                systemOutput.error(`get [${lfirst.transactionHash}] transactionReceipt error:`, e)
             }
-
-
         }
-
-
-        setTimeout(this.check, 3000)
+        setTimeout(() => {
+            LOOP_STATUS_LOG.log(`Transaction Loop still running ${new Date().getTime()}`)
+            this.check()
+        }, 2000)
     }
 
 }

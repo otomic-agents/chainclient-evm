@@ -154,7 +154,10 @@ export default class BlockEventFetcher {
       blockFetchTaskList.forEach((element) => {
         if (element.step != 3) task_number++;
       });
-      systemOutput.debug("task queue length", task_number);
+      systemOutput.debug("Queue Status:")
+      console.table({
+        "Task Queue Length": task_number
+      })
       if (task_number < 10) {
         //fetch height
         await self.blockHeight((err: Error, result: any) => {
@@ -239,7 +242,7 @@ export default class BlockEventFetcher {
 
     let result;
     try {
-      systemOutput.debug('Fetch height')
+      systemOutput.debug('fetch blockchain height method:eth_blockNumber')
       result = await this.monitor.evmRpcClient.get().request(
         {
           method: "eth_blockNumber",

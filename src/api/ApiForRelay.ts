@@ -119,8 +119,8 @@ const buildTransferOutConfirm = async (ctx: KoaCtx, command_transfer_confirm: Co
 
     let calldata = obridgeIface.encodeFunctionData("confirmTransferOut", [
         command_transfer_confirm.sender,                                                                          // address _sender,
-        ethers.BigNumber.from(command_transfer_confirm.user_receiver_address).toHexString(),        // address _receiver,
-        ethers.BigNumber.from(command_transfer_confirm.token).toHexString(),                        // address _token,
+        command_transfer_confirm.user_receiver_address,        // address _receiver,
+        command_transfer_confirm.token,                        // address _token,
         command_transfer_confirm.token_amount,                                                      // uint256 _token_amount,
         command_transfer_confirm.eth_amount,                                                        // uint256 _eth_amount,
         ethers.utils.arrayify(command_transfer_confirm.hash_lock),                                  // bytes32 _hashlock,

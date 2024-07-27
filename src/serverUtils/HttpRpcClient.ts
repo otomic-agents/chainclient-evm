@@ -14,8 +14,10 @@ export class HttpRpcClient {
     constructor(url: string) {
         this.url = url;
     }
-
-    async request(requestObject: RequestArguments, timeout?: number): Promise<any> {
+    public getUrl(): string {
+        return this.url;
+    }
+    public async request(requestObject: RequestArguments, timeout?: number): Promise<any> {
         const agent = new https.Agent({
             keepAlive: false,
         });
@@ -61,7 +63,7 @@ export class HttpRpcClient {
 
     // This is a dummy implementation since HTTP requests don't have connections to close.
     // In case of WebSocket or persistent connections, you might need to implement closing logic here.
-    close(): void {
+    public close(): void {
         console.log('Closing the connection... (dummy implementation)');
     }
 }
