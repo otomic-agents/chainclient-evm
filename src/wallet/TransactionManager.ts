@@ -229,7 +229,28 @@ class TransactionCheckLoop {
             return
         }
     })
+    private async getTransactionReceipt(lfirst:TransactionRequestCC,lfirstData:TransactionRequestCC){
+        try {
+            console.log("[key point] get transactionReceipt , transactionHash:", lfirst.transactionHash)
+            let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
+            let transactionReceipt = await provider.getTransactionReceipt(lfirst.transactionHash)//
+            systemOutput.debug("transactionReceipt:")
+            systemOutput.debug(transactionReceipt);
 
+            if (transactionReceipt != undefined && transactionReceipt != null) {
+                lfirstData.transactionReceipt = transactionReceipt
+                if (transactionReceipt.status == 1) {
+                    this.paddingListHolder.onTransactionNowSucceed(lfirstData)
+                } else {
+                    //TODO Throws Error
+                    this.pushErrorMessage(`transaction execution failed ,receipt status is not [1]`)
+                }
+            }
+        } catch (e) {
+            this.pushErrorMessage(`transaction execution failed`)
+            systemOutput.error(`get [${lfirst.transactionHash}] transactionReceipt error:`, e)
+        }
+    }
     check = async() => {
         const lfirstDataString = this.paddingListHolder.getFirst()
         if (lfirstDataString == undefined) {
@@ -261,12 +282,9 @@ class TransactionCheckLoop {
             } else {
                 lfirst.gasPrice = gas_price
             }
-            
-            //get limit
-            let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
-
 
             try {
+                let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
                 lfirst.value = ethers.BigNumber.from(lfirst.value)
                 lfirst.gasLimit = 500000
                 let gas_limit = await provider.estimateGas(lfirst as TransactionRequest)
@@ -327,26 +345,10 @@ class TransactionCheckLoop {
                 systemOutput.error(err)
             }
         } else {
-            try {
-                console.log("transactionHash:", lfirst.transactionHash)
-                let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
-                let transactionReceipt = await provider.getTransactionReceipt(lfirst.transactionHash)
-                systemOutput.debug("transactionReceipt:")
-                systemOutput.debug(transactionReceipt);
-
-                if (transactionReceipt != undefined && transactionReceipt != null) {
-                    lfirstData.transactionReceipt = transactionReceipt
-                    if (transactionReceipt.status == 1) {
-                        this.paddingListHolder.onTransactionNowSucceed(lfirstData)
-                    } else {
-                        //TODO Throws Error
-                        this.pushErrorMessage(`transaction execution failed ,receipt status is not [1]`)
-                    }
-                }
-            } catch (e) {
-                this.pushErrorMessage(`transaction execution failed ${JSON.stringify(e)}`)
-                systemOutput.error(`get [${lfirst.transactionHash}] transactionReceipt error:`, e)
-            }
+            process.nextTick(async () => {
+                // The transaction receipt here only affects the processing of the queue. If it is already on the chain, other Events will continue to handle the system logic.
+                await this.getTransactionReceipt(lfirst, lfirstData)
+            })
         }
         setTimeout(() => {
             LOOP_STATUS_LOG.log(`Transaction Loop still running ${new Date().getTime()}`)

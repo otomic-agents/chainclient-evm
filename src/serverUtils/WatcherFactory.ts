@@ -59,7 +59,7 @@ const createCallback = (
     event.event_parse = event.eventParse;
     event.chain_id = config.system_chain_id;
 
-    systemOutput.debug("on event callback");
+    systemOutput.debug(`[key point] on event callback: type [${type}]`);
     systemOutput.debug(event);
     
 
@@ -69,7 +69,7 @@ const createCallback = (
     }
 
     try {
-      systemOutput.debug(`notify event`, url)
+      systemOutput.debug(`[key point] notify event`, url)
       needle.post(
         url,
         event,
