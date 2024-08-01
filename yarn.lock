@@ -392,6 +392,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/async@^3.2.24":
+  version "3.2.24"
+  resolved "https://registry.npmjs.org/@types/async/-/async-3.2.24.tgz"
+  integrity sha512-8iHVLHsCCOBKjCF2KwFe0p9Z3rfM9mL+sSP8btyR5vTjJRAqpBYD28/ZLgXPf0pjG1VxOvtCV/BgXkQbpSe8Hw==
+
 "@types/bcrypt@^5.0.2":
   version "5.0.2"
   resolved "https://registry.npmjs.org/@types/bcrypt/-/bcrypt-5.0.2.tgz"
@@ -1073,6 +1078,11 @@ elliptic@^6.5.4, elliptic@6.5.4:
     inherits "^2.0.4"
     minimalistic-assert "^1.0.1"
     minimalistic-crypto-utils "^1.0.1"
+
+emittery@^0.10.1:
+  version "0.10.1"
+  resolved "https://registry.npmjs.org/emittery/-/emittery-0.10.1.tgz"
+  integrity sha512-OBSS9uVXbpgqEGq2V5VnpfCu9vSnfiR9eYVJmxFYToNIcWRHkM4BAFbJe/PWjf/pQdEL7OPxd2jOW/bJiyX7gg==
 
 emoji-regex@^8.0.0:
   version "8.0.0"

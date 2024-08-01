@@ -1,7 +1,6 @@
 import { BigNumber, BigNumberish, BytesLike, ethers } from "ethers";
 import needle from "needle"
 import bcrypt from "bcrypt"
-
 import Wallet from "./Wallet"
 
 import Config from "../config/Config"
@@ -13,11 +12,13 @@ import { systemOutput } from "../utils/systemOutput";
 import * as _ from "lodash"
 import { throttledLog } from "../utils/comm";
 const { dev, vault } = Config
-
+import * as async from "async"
+import { SystemBus } from "../bus/bus";
 const LOOP_STATUS_LOG = new throttledLog();
 let CACHE_KEY_LOCAL_PADDING_LIST = "CACHE_KEY_LOCAL_PADDING_LIST"
 let CACHE_KEY_LOCAL_SUCCEED_LIST = "CACHE_KEY_LOCAL_SUCCEED_LIST"
 let CACHE_KEY_LOCAL_FAILED_LIST = "CACHE_KEY_LOCAL_FAILED_LIST"
+const MAX_GET_TRANSACTION_RECEIPT_NUMBER = 35
 
 const getGasPrice = async (flag: string, evmConfig: EvmConfig) => {
     switch (evmConfig.system_chain_id) {
@@ -60,7 +61,12 @@ export type TransactionRequest = {
     customData?: Record<string, any>;
     ccipReadEnabled?: boolean;
 }
-
+class SendTransactionError extends Error {
+    public code: number;
+    constructor(code: number, message: string) {
+        super(message)
+    }
+}
 class TransactionCheckLoop {
 
     wallet: Wallet
@@ -68,14 +74,16 @@ class TransactionCheckLoop {
     evmRpcClient: EvmRpcClient
     evmConfig: EvmConfig
     failNum: number
+    getTransactionReceiptFailNum: number;
     errorMessage: string[] = new Array();
 
-    constructor(wallet: Wallet, paddingListHolder: TransactionManager, evmRpcClient: EvmRpcClient, evmConfig: EvmConfig){
+    constructor(wallet: Wallet, paddingListHolder: TransactionManager, evmRpcClient: EvmRpcClient, evmConfig: EvmConfig) {
         this.wallet = wallet
         this.paddingListHolder = paddingListHolder
         this.evmRpcClient = evmRpcClient
         this.evmConfig = evmConfig
         this.failNum = 0
+        this.getTransactionReceiptFailNum = 0;
         this.statusReport()
         this.check()
     }
@@ -107,16 +115,16 @@ class TransactionCheckLoop {
             "timestamp": parseInt(timestamp),
             "token": token,
             "perm": {
-              "group": "secret.vault",
-              "dataType": "key",
-              "version": "v1",
-              "ops": ["Sign"]
+                "group": "secret.vault",
+                "dataType": "key",
+                "version": "v1",
+                "ops": ["Sign"]
             }
         }
 
         let accessToken = () => new Promise<string>((result, reject) => {
             try {
-                
+
                 needle.post(`http://${vault.SERVER_URL}/permission/v1alpha1/access`, body,
                     {
                         headers: {
@@ -124,16 +132,16 @@ class TransactionCheckLoop {
                         }
                     },
                     (err, resp) => {
-                    console.log('error:', err)
-                    console.log('resp:', resp.body)
+                        console.log('error:', err)
+                        console.log('resp:', resp.body)
 
-                    if (err) {
-                        reject()
-                    } else {
-                        result(resp.body.data.access_token)
-                    }
+                        if (err) {
+                            reject()
+                        } else {
+                            result(resp.body.data.access_token)
+                        }
 
-                })
+                    })
             } catch (error) {
                 console.error(error)
                 return
@@ -142,7 +150,7 @@ class TransactionCheckLoop {
 
         let sign = (txData: any, at: string, evmConfig: EvmConfig) => new Promise((result, reject) => {
             try {
-                needle.post(`http://${vault.SERVER_URL}/system-server/v1alpha1/key/secret.vault/v1/Sign` ,
+                needle.post(`http://${vault.SERVER_URL}/system-server/v1alpha1/key/secret.vault/v1/Sign`,
                     {
                         "safe_type": "UNSAFE",
                         "chain_type": "EVM",
@@ -167,16 +175,16 @@ class TransactionCheckLoop {
                         }
                     },
                     (err, resp) => {
-                    console.log('error:', err)
-                    console.log('resp:', resp?.body)
+                        console.log('error:', err)
+                        console.log('resp:', resp?.body)
 
-                    if(!err && resp.body != undefined && resp.body.data != undefined && resp.body.data.data != undefined && resp.body.data.data.data != undefined) {
-                        result(resp.body.data.data.data)
-                    } else {
-                        reject()
-                    }
+                        if (!err && resp.body != undefined && resp.body.data != undefined && resp.body.data.data != undefined && resp.body.data.data.data != undefined) {
+                            result(resp.body.data.data.data)
+                        } else {
+                            reject()
+                        }
 
-                })
+                    })
             } catch (error) {
                 console.error(error)
                 return
@@ -214,45 +222,180 @@ class TransactionCheckLoop {
                 //     }
                 // },
                 (err, resp) => {
-                console.log('error:', err)
-                console.log('resp:', resp?.body)
+                    console.log('error:', err)
+                    console.log('resp:', resp?.body)
 
-                if(!err && resp.body != undefined && resp.body.data != undefined && resp.body.data.data != undefined) {
-                    result(resp.body.data.data)
-                } else {
-                    reject()
-                }
+                    if (!err && resp.body != undefined && resp.body.data != undefined && resp.body.data.data != undefined) {
+                        result(resp.body.data.data)
+                    } else {
+                        reject()
+                    }
 
-            })
+                })
         } catch (error) {
             console.error(error)
             return
         }
     })
-    private async getTransactionReceipt(lfirst:TransactionRequestCC,lfirstData:TransactionRequestCC){
-        try {
-            console.log("[key point] get transactionReceipt , transactionHash:", lfirst.transactionHash)
-            let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
-            let transactionReceipt = await provider.getTransactionReceipt(lfirst.transactionHash)//
-            systemOutput.debug("transactionReceipt:")
-            systemOutput.debug(transactionReceipt);
-
-            if (transactionReceipt != undefined && transactionReceipt != null) {
-                lfirstData.transactionReceipt = transactionReceipt
-                if (transactionReceipt.status == 1) {
-                    this.paddingListHolder.onTransactionNowSucceed(lfirstData)
-                } else {
-                    //TODO Throws Error
-                    this.pushErrorMessage(`transaction execution failed ,receipt status is not [1]`)
-                }
-            }
-        } catch (e) {
-            this.pushErrorMessage(`transaction execution failed`)
-            systemOutput.error(`get [${lfirst.transactionHash}] transactionReceipt error:`, e)
+    private async sendTransaction(lfirst: TransactionRequestCC, lfirstData: TransactionRequestCC) {
+        systemOutput.debug("send new transaction")
+        //get gas_price
+        let gas_price = await getGasPrice(lfirst.gasPrice as string, this.evmConfig)
+        if (gas_price == -1) {
+            delete lfirst.gasPrice
+        } else {
+            lfirst.gasPrice = gas_price
         }
+        let provider
+        return new Promise((resolve) => {
+            async.waterfall(
+                [
+                    async (callback: Function) => {
+                        try {
+                            provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
+                            callback(null)
+                        } catch (e) {
+                            callback(new SendTransactionError(0, `init provider error:${e.toString()}`))
+                        }
+                    },
+                    async (callback: Function) => {
+                        lfirst.value = ethers.BigNumber.from(lfirst.value)
+                        lfirst.gasLimit = 500000
+                        callback(null)
+                    },
+                    async (callback: Function) => {
+                        try {
+                            let gas_limit = await provider.estimateGas(lfirst as TransactionRequest)
+                            lfirst.gasLimit = gas_limit.add(10000)
+                            callback(null, { needAllowance: false })
+                        }
+                        catch (err) {
+                            if (
+                                err.reason == "execution reverted: ERC20: insufficient allowance"
+                                || err.reason == "execution reverted: ERC20: transfer amount exceeds allowance"
+                                || err.reason == "execution reverted: BEP20: transfer amount exceeds allowance") {
+                                callback(null, { needAllowance: true })
+                            } else {
+                                callback(new SendTransactionError(0, `estimateGas error:${err.toString()}`))
+                            }
+                        }
+                    },
+                    // If necessary, carry out the operation.
+                    async (allowanceInfo: { needAllowance: boolean }, callback) => {
+                        if (allowanceInfo.needAllowance == false) {
+                            callback(null)
+                            return
+                        }
+                        try {
+                            await this.paddingListHolder.jumpApprove(lfirstData)
+                            callback(new SendTransactionError(4, "loop execute on next tick"))
+                        } catch (err: any) {
+                            callback(new SendTransactionError(3, err.toString()))
+                        }
+                    },
+                    async (callback: Function) => {
+                        try {
+                            let transactionSended
+                            if ((dev.dev && dev.dev_sign) || await this.wallet.isVault(lfirst.from)) {
+                                console.log("Vault account Transaction")
+                                let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
+                                let nonce = await provider.getTransactionCount(lfirst.from)
+                                lfirst.nonce = nonce
+
+                                let secert_id = await this.wallet.getWallet(lfirst.from)
+                                if (secert_id == undefined) throw new Error("state error secert_id undefined");
+
+                                let signed = await this.vaultSign(lfirst, this.evmConfig, (secert_id as string))
+
+                                transactionSended = await provider.sendTransaction(signed as string)
+
+                            } else {
+                                console.log("Key account Transaction")
+                                let client: any = await this.wallet.getWallet(lfirst.from)
+                                if (client == undefined) throw new Error("client undefined");
+
+                                client = (client as ethers.Wallet).connect(provider)
+                                transactionSended = await client.sendTransaction(lfirst)
+                            }
+                            systemOutput.debug("transactionSended:", transactionSended)
+
+                            lfirstData.transactionHash = transactionSended.hash
+                            lfirstData.sended = transactionSended
+                            await this.paddingListHolder.updateTransactionNow(lfirstData)
+                            this.failNum = 0
+                            callback(null, lfirstData)
+                        } catch (err: any) {
+                            callback(new SendTransactionError(1, `send Transaction error:${err.toString()}`))
+                        }
+                    },
+                ], (err) => {
+                    resolve(true)
+                    if (!err) {
+                        systemOutput.debug("transaction send sucess")
+                        return
+                    }
+                    systemOutput.debug("🚨")
+                    systemOutput.error(err)
+                    SystemBus.emit("🚨", err)
+                    console.log('this.failNum:', this.failNum)
+                    this.failNum++
+                    if (this.failNum >= 5) {
+                        lfirstData.error = err
+                        this.paddingListHolder.onTransactionFailed(lfirstData)
+                        this.failNum = 0
+                    }
+                }
+            )
+        })
+
     }
-    check = async() => {
-        const lfirstDataString = this.paddingListHolder.getFirst()
+    private async getTransactionReceipt(lfirst: TransactionRequestCC, lfirstData: TransactionRequestCC) {
+        return new Promise((resolve) => {
+            async.waterfall([
+                async (callback: Function) => {
+                    try {
+                        console.log("[key point] get transactionReceipt , transactionHash:", lfirst.transactionHash)
+                        let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
+                        let transactionReceipt = await provider.getTransactionReceipt(lfirst.transactionHash)//
+                        systemOutput.debug("transactionReceipt:")
+                        systemOutput.debug(transactionReceipt);
+
+                        if (transactionReceipt != undefined && transactionReceipt != null) {
+                            lfirstData.transactionReceipt = transactionReceipt
+                            if (transactionReceipt.status == 1) {
+                                // this.paddingListHolder.onTransactionNowSucceed(lfirstData)
+                            } else {
+                                //TODO Throws Error
+                                this.pushErrorMessage(`transaction execution failed ,receipt status is not [1]`)
+                            }
+                        }
+                        lfirstData.transactionReceipt = undefined
+                    } catch (e) {
+                        this.pushErrorMessage(`transaction execution failed`)
+                        systemOutput.error(`get [${lfirst.transactionHash}] transactionReceipt error:`, e)
+                    }
+                    finally {
+                        callback(null)
+                    }
+                }
+            ], (err) => {
+                resolve(true)
+                if (!lfirstData.transactionReceipt) {
+                    this.getTransactionReceiptFailNum++
+                    if (this.getTransactionReceiptFailNum > MAX_GET_TRANSACTION_RECEIPT_NUMBER) {
+                        lfirstData.error = `get receipt timeout`
+                        this.paddingListHolder.onTransactionFailed(lfirstData)
+                        systemOutput.debug(lfirstData)
+                        systemOutput.error("receipt get faild")
+                    }
+                }
+            })
+            // getTransactionReceiptFailNum
+        })
+
+    }
+    check = async () => {
+        let lfirstDataString = this.paddingListHolder.getFirst()
         if (lfirstDataString == undefined) {
             setTimeout(() => {
                 LOOP_STATUS_LOG.log(`Transaction Loop still running ${new Date().getTime()}`)
@@ -271,84 +414,13 @@ class TransactionCheckLoop {
         systemOutput.debug("lfirst:")
         systemOutput.debug(lfirst)
 
-        lfirst.chainId =  typeof lfirst.chainId === 'string' ? parseInt(lfirst.chainId) : lfirst.chainId
-        
+        lfirst.chainId = typeof lfirst.chainId === 'string' ? parseInt(lfirst.chainId) : lfirst.chainId
+
         if (lfirst.transactionHash == undefined) {
-            systemOutput.debug("send new transaction")
-            //get gas_price
-            let gas_price = await getGasPrice(lfirst.gasPrice as string, this.evmConfig)
-            if (gas_price == -1) {
-                delete lfirst.gasPrice
-            } else {
-                lfirst.gasPrice = gas_price
-            }
-
-            try {
-                let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
-                lfirst.value = ethers.BigNumber.from(lfirst.value)
-                lfirst.gasLimit = 500000
-                let gas_limit = await provider.estimateGas(lfirst as TransactionRequest)
-                console.log("gas_limit:")
-                console.log(gas_limit)
-
-                lfirst.gasLimit = gas_limit.add(10000)
-                systemOutput.debug('lfirst send transaction')
-                systemOutput.debug(lfirst)
-
-                let transactionSended
-
-                if ((dev.dev && dev.dev_sign) || await this.wallet.isVault(lfirst.from)) {
-                    console.log("Vault account Transaction")
-                    let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
-                    let nonce = await provider.getTransactionCount(lfirst.from)
-                    lfirst.nonce = nonce
-
-                    // let signed = await this.test_sign(lfirst, this.evmConfig)
-
-                    let secert_id = await this.wallet.getWallet(lfirst.from)
-                    if (secert_id == undefined) throw new Error("state error secert_id undefined");
-
-                    let signed = await this.vaultSign(lfirst, this.evmConfig, (secert_id as string))
-
-                    transactionSended = await provider.sendTransaction(signed as string)
-
-                } else {
-                    console.log("Key account Transaction")
-                    let client: any = await this.wallet.getWallet(lfirst.from)
-                    if (client == undefined) throw new Error("client undefined");
-                    
-                    client = (client as ethers.Wallet).connect(provider)
-                    transactionSended = await client.sendTransaction(lfirst)
-                }
-                systemOutput.debug("transactionSended:",transactionSended)
-
-                lfirstData.transactionHash = transactionSended.hash
-                lfirstData.sended = transactionSended
-                await this.paddingListHolder.updateTransactionNow(lfirstData)
-                this.failNum = 0
-            } catch (err: any) {
-                if(
-                    err.reason == "execution reverted: ERC20: insufficient allowance"
-                || err.reason == "execution reverted: ERC20: transfer amount exceeds allowance"
-                || err.reason == "execution reverted: BEP20: transfer amount exceeds allowance"
-                || err.reason == "execution reverted"){
-                    await this.paddingListHolder.jumpApprove(lfirstData)
-                } else {
-                    console.log('this.failNum:', this.failNum)
-                    this.failNum++
-                    if(this.failNum >= 5){
-                        lfirstData.error = err
-                        this.paddingListHolder.onTransactionFailed(lfirstData)
-                        this.failNum = 0
-                    }
-                }
-                systemOutput.error(err)
-            }
+            this.getTransactionReceiptFailNum = 0
+            await this.sendTransaction(lfirst, lfirstData)
         } else {
-            process.nextTick(async () => {
-                // The transaction receipt here only affects the processing of the queue. If it is already on the chain, other Events will continue to handle the system logic.
-                await this.getTransactionReceipt(lfirst, lfirstData)
-            })
+            await this.getTransactionReceipt(lfirst, lfirstData)
         }
         setTimeout(() => {
             LOOP_STATUS_LOG.log(`Transaction Loop still running ${new Date().getTime()}`)
@@ -366,7 +438,7 @@ export default class TransactionManager {
     localPaddingList: string[] | undefined
 
     checkLoop: TransactionCheckLoop | undefined
-    constructor(){}
+    constructor() { }
 
     setConfig = async (redis: Redis, wallet: Wallet, evmRpcClient: EvmRpcClient, evmConfig: EvmConfig) => {
         this.redis = redis
@@ -378,7 +450,7 @@ export default class TransactionManager {
         CACHE_KEY_LOCAL_SUCCEED_LIST = `${CACHE_KEY_LOCAL_SUCCEED_LIST}_${evmConfig.system_chain_id}`
         CACHE_KEY_LOCAL_FAILED_LIST = `${CACHE_KEY_LOCAL_FAILED_LIST}_${evmConfig.system_chain_id}`
 
-        if(evmConfig.clear_padding == true) {
+        if (evmConfig.clear_padding == true) {
             await this.redis.del(CACHE_KEY_LOCAL_PADDING_LIST)
         }
 
@@ -428,7 +500,7 @@ export default class TransactionManager {
         if (this.evmConfig == undefined) throw new Error("state error evmConfig undefined");
         if (this.wallet == undefined) throw new Error("state error wallet undefined");
         if (this.redis == undefined) throw new Error("db state error redis undefined");
-        
+
         console.log("jumpApprove")
 
         let walletInfos = await this.wallet.getWalletInfo()
@@ -451,10 +523,10 @@ export default class TransactionManager {
             let allowance = await c.allowance(wallet.wallet_address, transaction.to)
 
             if (new BN((allowance as BigNumber).toString()).comparedTo(transaction.rawData["token_amount"]) == -1) {
-
+                console.log('allowance not enough')
             } else {
                 console.log('allowance enough')
-                return 
+                return
             }
 
         } catch (error) {
@@ -470,12 +542,12 @@ export default class TransactionManager {
         ])
 
         let transactionRequest = {
-            to          : token,
-            from        : wallet.wallet_address,
-            data        : calldata,
-            value       : 0,
-            gasPrice    : transaction.gasPrice,
-            chainId     : this.evmConfig.chain_id,
+            to: token,
+            from: wallet.wallet_address,
+            data: calldata,
+            value: 0,
+            gasPrice: transaction.gasPrice,
+            chainId: this.evmConfig.chain_id,
         }
 
         this.localPaddingList.unshift(JSON.stringify(transactionRequest))
@@ -518,7 +590,7 @@ export default class TransactionManager {
 
     getStatus = async () => {
         return {
-            padding : this.localPaddingList
+            padding: this.localPaddingList
         }
     }
 }

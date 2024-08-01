@@ -3,3 +3,4 @@ testcode
 env.sh
 build.sh
 result.log
+lp-env.sh

@@ -122,7 +122,10 @@ export default class EventFilter {
                     events.forEach((log: any) => {
                         const tx = dataMap.get(log.transactionHash).tx
                         const respBlock = dataMap.get(log.transactionHash).block
-                        console.log("--------------------> tx", tx);
+                        systemOutput.debug("Time line")
+                        console.log("<--------- tx");
+                        console.log(tx)
+                       
                         let eventParse = Web3EthAbi.decodeLog(
                             filter_info.event_data.inputs,
                             log.data,
@@ -137,16 +140,23 @@ export default class EventFilter {
                         finishedEvent++;
                     });
 
-                    try {
-                        await self.monitor.update_height(
-                            parseInt(
-                                task.event_data[task.event_data.length - 1].blockNumber,
-                                16
-                            )
-                        );
-                    } catch (error) {
-                        systemOutput.error("update_height error:", error, task.event_data);
-                    }
+                    
+                    (async () => {
+                        if (task.event_data.length <= 0) {
+                            systemOutput.warn("can't update height ,event data is empty....")
+                            return
+                        }
+                        try {
+                            await self.monitor.update_height(
+                                parseInt(
+                                    task.event_data[task.event_data.length - 1].blockNumber,
+                                    16
+                                )
+                            );
+                        } catch (error) {
+                            systemOutput.error("update_height error:", error, task.event_data);
+                        }
+                    })()
                 }
             } catch (e) {
                 systemOutput.error(e);
