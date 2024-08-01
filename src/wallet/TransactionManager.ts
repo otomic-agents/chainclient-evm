@@ -363,13 +363,12 @@ class TransactionCheckLoop {
                         if (transactionReceipt != undefined && transactionReceipt != null) {
                             lfirstData.transactionReceipt = transactionReceipt
                             if (transactionReceipt.status == 1) {
-                                // this.paddingListHolder.onTransactionNowSucceed(lfirstData)
+                                this.paddingListHolder.onTransactionNowSucceed(lfirstData)
                             } else {
                                 //TODO Throws Error
                                 this.pushErrorMessage(`transaction execution failed ,receipt status is not [1]`)
                             }
                         }
-                        lfirstData.transactionReceipt = undefined
                     } catch (e) {
                         this.pushErrorMessage(`transaction execution failed`)
                         systemOutput.error(`get [${lfirst.transactionHash}] transactionReceipt error:`, e)
