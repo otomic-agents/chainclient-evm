@@ -354,7 +354,7 @@ class TransactionCheckLoop {
             async.waterfall([
                 async (callback: Function) => {
                     try {
-                        console.log("[key point] get transactionReceipt , transactionHash:", lfirst.transactionHash)
+                        console.log(`[key point] [${this.getTransactionReceiptFailNum}] get transactionReceipt , transactionHash:`, lfirst.transactionHash)
                         let provider = new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
                         let transactionReceipt = await provider.getTransactionReceipt(lfirst.transactionHash)//
                         systemOutput.debug("transactionReceipt:")
@@ -384,10 +384,13 @@ class TransactionCheckLoop {
                     if (this.getTransactionReceiptFailNum > MAX_GET_TRANSACTION_RECEIPT_NUMBER) {
                         lfirstData.error = `get receipt timeout`
                         this.paddingListHolder.onTransactionFailed(lfirstData)
-                        systemOutput.debug(lfirstData)
+                        // systemOutput.debug(lfirstData)
                         systemOutput.error("receipt get faild")
                     }
+                    return
                 }
+                systemOutput.debug("Receipt data:")
+                console.log(lfirstData.transactionReceipt)
             })
             // getTransactionReceiptFailNum
         })
