@@ -53,7 +53,7 @@ export default class EventFilter {
                         throw new Error("dispatcher error: blockFetchTaskList[0] gone");
                     }
 
-                    let events = task.event_data.filter((event: any) => {
+                    const events = task.event_data.filter((event: any) => {
                         // console.log(event.topics[0])
                         // console.log(filter_info.topic_string)
                         return event.topics[0] == filter_info.topic_string;
@@ -131,13 +131,13 @@ export default class EventFilter {
                             log.data,
                             log.topics.slice(1)
                         );
+                        finishedEvent++;
                         callback({
                             event: log,
                             tx,
                             eventParse,
                             block: respBlock,
                         });
-                        finishedEvent++;
                     });
 
                     
