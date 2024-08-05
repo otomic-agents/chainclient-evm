@@ -26,13 +26,16 @@ let CACHE_KEY_LOCAL_SUCCEED_LIST = "CACHE_KEY_LOCAL_SUCCEED_LIST";
 let CACHE_KEY_LOCAL_FAILED_LIST = "CACHE_KEY_LOCAL_FAILED_LIST";
 const MAX_GET_TRANSACTION_RECEIPT_NUMBER = 35;
 const MAX_MESSAGE = 10;
-process.env.EDGE_USE_CORECLR = "1";
-const baseNetAppPath = path.join(
-  __dirname,
-  "../../dotnet/StartUp/bin/Debug/net8.0"
-);
-process.env.EDGE_APP_ROOT = baseNetAppPath;
-var edge = require("edge-js");
+let baseNetAppPath;
+if (_.get(process, "env.USE_DOTNET", "false") === "true") {
+  process.env.EDGE_USE_CORECLR = "1";
+  baseNetAppPath = path.join(
+    __dirname,
+    "../../dotnet/StartUp/bin/Debug/net8.0"
+  );
+  process.env.EDGE_APP_ROOT = baseNetAppPath;
+  var edge = require("edge-js");
+}
 
 const getMaxGasPrice = (evmConfig: EvmConfig): string => {
   switch (evmConfig.system_chain_id) {
