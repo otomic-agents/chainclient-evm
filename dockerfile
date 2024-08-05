@@ -1,4 +1,4 @@
-FROM node:16
+FROM agracio/ubuntu-node-netcore
 
 COPY . /src/
 
