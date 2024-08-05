@@ -1,7 +1,7 @@
 import Monitor from "./Monitor";
 import { BlockFetchTask, EvmRpcClient } from "../interface/interface";
 import { systemOutput } from "../utils/systemOutput";
-import * as _ from "lodash"
+import * as _ from "lodash";
 const get_events = async (
   evmRpcClient: EvmRpcClient,
   from: string,
@@ -23,7 +23,7 @@ const get_events = async (
       callback(null, resp);
     })
     .catch(async (error: Error) => {
-      console.error("get_events error",error,from,to);
+      console.error("get_events error", error, from, to);
       try {
         if (error.message.indexOf("limit exceeded")) {
           await evmRpcClient.saveBlackTemporary();
@@ -31,9 +31,8 @@ const get_events = async (
           await evmRpcClient.saveBlack();
         }
       } catch (e) {
-        systemOutput.error(e)
-      }
-      finally {
+        systemOutput.error(e);
+      } finally {
         callback(error, null);
       }
     });
@@ -60,7 +59,13 @@ const startFetchEvent = (
         return;
       }
       task.step = 2;
-      systemOutput.debug("Fetcher task", "start:", task.block_start, "end:", task.block_end);
+      systemOutput.debug(
+        "Fetcher task",
+        "start:",
+        task.block_start,
+        "end:",
+        task.block_end
+      );
 
       await get_events(
         evmRpcClient,
@@ -76,7 +81,7 @@ const startFetchEvent = (
             // console.log(result)
             task.event_data = result;
             if (!result) {
-              systemOutput.warn("result is null", result)
+              systemOutput.warn("result is null", result);
             }
             task.step = 3;
 
@@ -123,47 +128,51 @@ export default class BlockEventFetcher {
   }
   private monitorTaskQueue() {
     setInterval(() => {
-      let task_number = this.getRuningTaskNumber()
-      systemOutput.debug("Queue Status:")
+      let task_number = this.getRuningTaskNumber();
+      systemOutput.debug("Queue Status:");
       console.table({
-        "Task Queue Length": task_number
-      })
-    }, 1000 * 20)
+        "Task Queue Length": task_number,
+      });
+    }, 1000 * 20);
   }
   private getRuningTaskNumber(): number {
     let task_number = 0;
     this.monitor.blockFetchTaskList.forEach((element) => {
       if (element.step != 3) task_number++;
     });
-    return task_number
+    return task_number;
   }
   private async startDispatch(blockFetchTaskList: BlockFetchTask[]) {
     let self = this;
     let next = () => {
       setTimeout(() => {
-        dispatch()
-      }, 5000)
-    }
+        dispatch();
+      }, 5000);
+    };
     console.log("create dispatcher");
     let dispatch = async () => {
-      if (self.historyMode && blockFetchTaskList.length == 0) {
-        console.log("task history finished");
-        return;
-      }
       //check task number
-      let task_number = this.getRuningTaskNumber()
+      let task_number = this.getRuningTaskNumber();
       if (task_number > 10) {
-        next()
+        next();
         return;
       }
       // create block object
-      systemOutput.debug("dispatch? ", (self.monitor.blockHeight > self.monitor.taskBlockEventNow), self.monitor.blockHeight, self.monitor.taskBlockEventNow)
+      systemOutput.debug(
+        "dispatch? ",
+        self.monitor.blockHeight > self.monitor.taskBlockEventNow,
+        self.monitor.blockHeight,
+        self.monitor.taskBlockEventNow
+      );
       while (
         self.monitor.blockHeight > self.monitor.taskBlockEventNow &&
         task_number < 100
       ) {
         let block_start = self.monitor.taskBlockEventNow + 1;
-        let block_end: number = (self.monitor.blockHeight - self.monitor.taskBlockEventNow) > 5 ? (self.monitor.taskBlockEventNow + 5) : self.monitor.blockHeight;
+        let block_end: number =
+          self.monitor.blockHeight - self.monitor.taskBlockEventNow > 5
+            ? self.monitor.taskBlockEventNow + 5
+            : self.monitor.blockHeight;
         blockFetchTaskList.push({
           step: 1, // 1:wait 2:fetching 3:finished
           event_data: undefined,
@@ -173,23 +182,27 @@ export default class BlockEventFetcher {
         self.monitor.taskBlockEventNow = block_end;
         task_number++;
       }
-      next()
+      if (self.historyMode && blockFetchTaskList.length == 0) {
+        console.log("task history finished");
+        return;
+      }
+      next();
     };
     dispatch();
   }
 
   private async monitorLatestHeight() {
     try {
-      let height = await this.getAndSetLatestHeight()
-      systemOutput.debug(`Loop update height sucessed, the latest height ${height}`)
-    }
-    catch (e) {
-      systemOutput.error("monitorlatestHeight error:", e)
-    }
-    finally {
+      let height = await this.getAndSetLatestHeight();
+      systemOutput.debug(
+        `Loop update height sucessed, the latest height ${height}`
+      );
+    } catch (e) {
+      systemOutput.error("monitorlatestHeight error:", e);
+    } finally {
       setTimeout(() => {
         this.monitorLatestHeight();
-      }, 1000 * 5)
+      }, 1000 * 5);
     }
   }
   public async startFetch() {
@@ -200,7 +213,6 @@ export default class BlockEventFetcher {
     await this.monitorLatestHeight();
     await this.monitorTaskQueue();
     console.log("startFetch");
-
 
     if (this.monitor.taskBlockEventNow == undefined) {
       if (this.monitor.evmConfig == undefined)
@@ -218,7 +230,7 @@ export default class BlockEventFetcher {
 
     let blockFetchTaskList = this.monitor.blockFetchTaskList;
 
-    await this.startDispatch(blockFetchTaskList)
+    await this.startDispatch(blockFetchTaskList);
 
     if (this.monitor.evmRpcClient == undefined)
       throw new Error("evmRpcClient state error");
@@ -228,7 +240,7 @@ export default class BlockEventFetcher {
       blockFetchTaskList,
       this.monitor
     );
-  };
+  }
   private async getAndSetLatestHeight(): Promise<number> {
     await this.blockHeight((err: Error, result: any) => {
       if (!err) {
@@ -238,14 +250,14 @@ export default class BlockEventFetcher {
           this.monitor.realBlockHeight = parseInt(result, 16);
           this.monitor.blockHeight = this.monitor.realBlockHeight - 6; //prevent chasing uncles
         }
-        return
+        return;
       }
-      systemOutput.error("get block error:", err)
+      systemOutput.error("get block error:", err);
     });
     if (!_.isFinite(this.monitor.blockHeight)) {
-      throw new Error("block number faild")
-    };
-    return this.monitor.blockHeight
+      throw new Error("block number faild");
+    }
+    return this.monitor.blockHeight;
   }
   public async blockHeight(callback: Function) {
     if (this.historyMode) {
@@ -258,7 +270,7 @@ export default class BlockEventFetcher {
 
     let result;
     try {
-      systemOutput.debug('fetch blockchain height method:eth_blockNumber')
+      systemOutput.debug("fetch blockchain height method:eth_blockNumber");
       result = await this.monitor.evmRpcClient.get().request(
         {
           method: "eth_blockNumber",
@@ -273,11 +285,11 @@ export default class BlockEventFetcher {
     }
     let printHeight = (hexString: string) => {
       if (!hexString || hexString == "") {
-        return "---"
+        return "---";
       }
-      return parseInt(result.slice(2), 16).toString()
-    }
-    systemOutput.debug("The latest blockchain height is:", printHeight(result))
+      return parseInt(result.slice(2), 16).toString();
+    };
+    systemOutput.debug("The latest blockchain height is:", printHeight(result));
     callback(null, result);
-  };
+  }
 }

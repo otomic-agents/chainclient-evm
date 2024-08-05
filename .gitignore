@@ -4,3 +4,7 @@ env.sh
 build.sh
 result.log
 lp-env.sh
+dotnet/ExternalLibrary/bin/**/*
+dotnet/ExternalLibrary/obj/**/*
+dotnet/StartUp/bin/**/*
+dotnet/StartUp/obj/**/*

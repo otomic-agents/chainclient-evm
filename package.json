@@ -19,6 +19,8 @@
     "bcrypt": "^5.1.0",
     "bignumber.js": "^9.1.2",
     "dayjs": "^1.11.11",
+    "edge-js": "^22.1.2",
+    "edgejs": "^0.0.0",
     "emittery": "^0.10.1",
     "ethers": "^5.7.1",
     "ioredis": "^5.2.3",
