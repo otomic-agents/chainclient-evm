@@ -245,9 +245,6 @@ export default class BlockEventFetcher {
     if (!_.isFinite(this.monitor.blockHeight)) {
       throw new Error("block number faild")
     };
-    if (!_.isFinite(this.monitor.realBlockHeight)) {
-      throw new Error("realBlockHeight number faild")
-    }
     return this.monitor.blockHeight
   }
   public async blockHeight(callback: Function) {
