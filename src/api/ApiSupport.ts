@@ -3,6 +3,7 @@ import { CallbackUrlBox, EvmConfig, EvmRpcClient } from '../interface/interface'
 import Monitor from '../monitor/Monitor'
 import { watchConfirmIn, watchConfirmOut, watchRefundIn, watchRefundOut, watchReputation, watchTransferIn, watchTransferOut } from '../serverUtils/WatcherFactory'
 import needle from 'needle'
+import retry from 'async-retry';
 import * as _ from "lodash"
 import { systemOutput } from '../utils/systemOutput'
 import { sha256 } from '../utils/hash'
@@ -37,7 +38,7 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
 
         monitor.watchHeight(
             {
-                onHeightUpdate: (heightIn) => {
+                onHeightUpdate: async (heightIn) => {
 
                     // fix last block no event
                     // const height = heightIn
@@ -55,32 +56,31 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
                     const doPost = isReputation ? blockNumberCache[height].hit >= 1 : blockNumberCache[height].hit >= 6
 
                     if (doPost) {
-                        try {
+                        retry(async () => {
                             systemOutput.debug("send onHeightUpdate ", on_height_update_url, height);
                             const sendData = {
                                 type: 'update_height',
                                 height: height,
                                 data: blockNumberCache[height].data
                             }
-                            needle.post(on_height_update_url,
+                            await needle('post', on_height_update_url,
                                 sendData,
                                 {
                                     headers: {
                                         "Content-Type": "application/json"
                                     }
-                                },
-                                (err, resp) => {
-                                    if (err != null) {
-                                        console.log('error:', err)
-                                        console.log('resp:', _.get(resp, "body", undefined))
-                                    }
                                 })
-                        } catch (error) {
-                            console.error(error)
-                            return
-                        }
+                        },
+                        {
+                            retries: 10,
+                            minTimeout: 1000, // 1 second
+                            maxTimeout: Infinity,
+                            onRetry: (error, attempt) => {
+                                systemOutput.debug(`attempt ${attempt}`);
+                                systemOutput.error(error)
+                            },
+                        });
                     }
-
                 }
             }
         )

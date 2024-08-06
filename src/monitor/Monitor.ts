@@ -13,7 +13,7 @@ const HEIGHTLOG = new throttledLog();
 const CACHE_KEY_EVENT_HEIGHT = "CACHE_KEY_EVENT_HEIGHT";
 // Monitor
 export interface HeightWatcher {
-  onHeightUpdate: (height: number) => void;
+  onHeightUpdate: (height: number) => Promise<void>;
 }
 
 function alignToNearest5(num: number): number {
@@ -191,7 +191,7 @@ export default class Monitor {
     }
 
     for (const watcher of this.heightWatchers) {
-      watcher.onHeightUpdate(height);
+      await watcher.onHeightUpdate(height);
     }
   };
 
