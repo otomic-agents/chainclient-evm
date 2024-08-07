@@ -1,4 +1,5 @@
 import needle from "needle";
+import retry from 'async-retry';
 import Monitor from "../monitor/Monitor";
 import { EvmConfig, FilterInfo } from "../interface/interface";
 import { systemOutput } from "../utils/systemOutput";
@@ -68,25 +69,24 @@ const createCallback = (
       return;
     }
 
-    try {
-      systemOutput.debug(`[key point] notify event`, url)
-      needle.post(
-        url,
-        event,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
+    retry(async () => {
+        systemOutput.debug(`[key point] notify event`, url)
+        await needle('post', url,
+            event,
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            })
+    }, {
+        retries: 10,
+        minTimeout: 1000, // 1 second
+        maxTimeout: Infinity,
+        onRetry: (error, attempt) => {
+            systemOutput.debug(`attempt ${attempt}`);
+            systemOutput.error(error)
         },
-        (err, resp) => {
-          console.log("error:", err);
-          console.log("resp:", resp.body);
-        }
-      );
-    } catch (error) {
-      console.error(error);
-      return;
-    }
+    });
   };
 };
 
