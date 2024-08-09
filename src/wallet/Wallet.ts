@@ -129,12 +129,19 @@ export default class Wallet {
 
     console.log('syncBalance')
     console.log(JSON.stringify(this.walletSecrets))
-
-    for (const wallet of this.walletSecrets) {
-      if (wallet.web3Wallet == undefined && wallet.type == 'secret_vault') {
-        wallet.private_key = await getKey(wallet.vault_name)
+    try {
+      for (const wallet of this.walletSecrets) {
+        if (wallet.web3Wallet == undefined && wallet.type == 'secret_vault') {
+          wallet.private_key = await getKey(wallet.vault_name)
+        }
       }
+    } catch (e) {
+      systemOutput.error(e);
+      systemOutput.warn("Restart in 30 seconds")
+      await new Promise((resolve) => { setTimeout(() => { resolve(true) }, 1000 * 30) })
+      process.exit()
     }
+
 
     this.walletSecrets.forEach((wallet) => {
       if (!wallet.type) {
