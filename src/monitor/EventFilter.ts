@@ -48,7 +48,13 @@ export default class EventFilter {
     this.dispatcherEventList.push(dispatcherDataHolder);
 
     let self = this;
+    const status = {
+
+    }
     let checkEvent = async (stop: Function) => {
+      if (typeof this.monitor.onFilter() == "function") {
+        this.monitor.onFilter()
+      }
       let blockFetchTaskList = dispatcherDataHolder.event_list;
       EVENT_PROCESS_LOG.log("checkEvent still running");
       try {
@@ -58,7 +64,7 @@ export default class EventFilter {
           if (task == undefined) {
             throw new Error("dispatcher error: blockFetchTaskList[0] gone");
           }
-
+          this.monitor.onFilterData(task.event_data);
           const events = task.event_data.filter((event: any) => {
             return event.topics[0] == filter_info.topic_string;
           });
@@ -68,14 +74,14 @@ export default class EventFilter {
 
           let finishedEvent = 0;
           let dataMap: Map<string, { tx: any; block: any }> = new Map();
-          const downloadTasks :any[]= [];
+          const downloadTasks: any[] = [];
           if (self.monitor.evmRpcClient == undefined) {
             throw new Error("evmRpcClient not found");
           }
           events.forEach((log: any) => {
             downloadTasks.push(
               new Promise((resolve, reject) => {
-                const downloadResult:{tx:any,block:any} = { tx: null, block: null };
+                const downloadResult: { tx: any, block: any } = { tx: null, block: null };
                 async.series(
                   [
                     function getTransactionReceipt(cb) {
@@ -192,7 +198,7 @@ export default class EventFilter {
       }
     };
     var stop = false;
-    for (;;) {
+    for (; ;) {
       if (stop) {
         setInterval(() => {
           systemOutput.debug("filter loop is stoped .");

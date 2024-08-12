@@ -258,8 +258,8 @@ export default class ApiForLp {
         systemOutput.info('config:')
         systemOutput.info(JSON.stringify(ctx.config.evm_config))
 
-        systemOutput.info('obridgeIface:')
-        systemOutput.info(JSON.stringify(this.obridgeIface))
+        // systemOutput.info('obridgeIface:')
+        // systemOutput.info(JSON.stringify(this.obridgeIface))
       }
       ctx.response.body = this.registerLpnode(ctx.request.body, ctx.monitor, config)
     })

@@ -27,6 +27,8 @@ import RPCGeter from "./serverUtils/RPCGeter";
 import { UniqueIDGenerator } from "./utils/comm";
 import { systemOutput } from "./utils/systemOutput";
 import { HttpRpcClient } from "./serverUtils/HttpRpcClient";
+import { MonitorManager } from "./monitor/MonitorManager";
+import { ApiForStatus } from "./api/ApiForStatus";
 
 export default class ChainClientEVM {
     router: Router | undefined;
@@ -165,13 +167,12 @@ export default class ChainClientEVM {
 
     initModule = async () => {
         console.log("initModule");
-        this.monitor = new Monitor();
+        this.monitor = MonitorManager.getInst().createMonitor("default")
         this.wallet = new Wallet();
         this.transactionManager = new TransactionManager();
         this.syncer = new StatusSyncer();
         await this.changeUrl();
-
-        await this.monitor.setConfigModeChase(this.redis, this.evmRpcClient, Config.evm_config);
+        await MonitorManager.getInst().initMoniter("default", this.redis, this.evmRpcClient, Config.evm_config)
         await this.wallet.setConfig(this.redis, this.evmRpcClient, Config.evm_config);
         await this.transactionManager.setConfig(this.redis, this.wallet, this.evmRpcClient, Config.evm_config);
 
@@ -224,6 +225,8 @@ export default class ChainClientEVM {
         new ApiForLp().linkRouter(this.router, Config.evm_config as EvmConfig);
         new ApiForLpAdmin().linkRouter(this.router, Config.evm_config as EvmConfig);
         new ApiSupport().linkRouter(this.router, Config.evm_config as EvmConfig);
+        new ApiForStatus().linkRouter(this.router, Config.evm_config as EvmConfig);
+
     };
 
     startServer = async () => {

@@ -7,6 +7,7 @@ import retry from 'async-retry';
 import * as _ from "lodash"
 import { systemOutput } from '../utils/systemOutput'
 import { sha256 } from '../utils/hash'
+import { MonitorManager } from '../monitor/MonitorManager'
 function getFlagHeight(num: number): number {
     return Math.ceil(num / 5) * 5;
 }
@@ -90,8 +91,9 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
 }
 
 const startHistoryTask = async (startBlock: number, endBlock: number, callbackUrl: CallbackUrlBox, client: EvmRpcClient, config: EvmConfig, merge: boolean) => {
-    const historyMonitor = new Monitor()
-    historyMonitor.setConfigModeHistory(client, startBlock, endBlock)
+    const monitorName = `history-${startBlock}_${endBlock}`
+    const historyMonitor = MonitorManager.getInst().createMonitor(monitorName)
+    MonitorManager.getInst().initMoniterAsHistory(monitorName,client,startBlock,endBlock)
 
     const mergeData = watchHeight(callbackUrl, historyMonitor, false)
 
@@ -106,13 +108,12 @@ const startHistoryTask = async (startBlock: number, endBlock: number, callbackUr
 }
 
 const startReputationHistoryTask = async (startBlock: number, endBlock: number, callbackUrl: CallbackUrlBox, client: EvmRpcClient, config: EvmConfig, merge: boolean) => {
-    const historyMonitor = new Monitor()
-    historyMonitor.setConfigModeHistory(client, startBlock, endBlock)
+    const monitorName = `reputation-history-${startBlock}_${endBlock}`
+    const historyMonitor = MonitorManager.getInst().createMonitor(monitorName)
+    MonitorManager.getInst().initMoniterAsHistory(monitorName,client,startBlock,endBlock)
 
     const mergeData = watchHeight(callbackUrl, historyMonitor, true)
-
     watchReputation(historyMonitor, callbackUrl.on_reputation, config, merge, mergeData)
-
     historyMonitor.historyModeStart()
 }
 
