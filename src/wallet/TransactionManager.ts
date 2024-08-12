@@ -26,7 +26,7 @@ let CACHE_KEY_LOCAL_SUCCEED_LIST = "CACHE_KEY_LOCAL_SUCCEED_LIST";
 let CACHE_KEY_LOCAL_FAILED_LIST = "CACHE_KEY_LOCAL_FAILED_LIST";
 const MAX_GET_TRANSACTION_RECEIPT_NUMBER = 35;
 const MAX_MESSAGE = 10;
-let baseNetAppPath;
+let baseNetAppPath: string | undefined;
 if (_.get(process, "env.USE_DOTNET", "false") === "true") {
   process.env.EDGE_USE_CORECLR = "1";
   baseNetAppPath = path.join(
@@ -324,7 +324,7 @@ class TransactionCheckLoop {
     } else {
       lfirst.gasPrice = gas_price;
     }
-    let provider;
+    let provider: any;
     return new Promise((resolve) => {
       async.waterfall(
         [
@@ -358,11 +358,11 @@ class TransactionCheckLoop {
             } catch (err) {
               if (
                 err.reason ==
-                  "execution reverted: ERC20: insufficient allowance" ||
+                "execution reverted: ERC20: insufficient allowance" ||
                 err.reason ==
-                  "execution reverted: ERC20: transfer amount exceeds allowance" ||
+                "execution reverted: ERC20: transfer amount exceeds allowance" ||
                 err.reason ==
-                  "execution reverted: BEP20: transfer amount exceeds allowance"
+                "execution reverted: BEP20: transfer amount exceeds allowance"
               ) {
                 callback(null, { needAllowance: true });
               } else {
@@ -376,7 +376,7 @@ class TransactionCheckLoop {
             }
           },
           // If necessary, carry out the operation.
-          async (allowanceInfo: { needAllowance: boolean }, callback) => {
+          async (allowanceInfo: { needAllowance: boolean }, callback: Function) => {
             if (allowanceInfo.needAllowance == false) {
               callback(null);
               return;
@@ -580,11 +580,13 @@ export default class TransactionManager {
   localPaddingList: string[] | undefined;
   getDynamicGasPriceFunction: Function;
   private getDynamicGasPriceFunctionResult: string = null; // {id:2,result:"0x23"}
+  private dotnetEnable: boolean = false;
   rpcGas: string = null;
   checkLoop: TransactionCheckLoop | undefined;
-  constructor() {}
+  constructor() { }
 
   private initDotnet() {
+    this.dotnetEnable = true;
     console.log(path.join(baseNetAppPath, "Newtonsoft.Json.dll"));
     const getDynamicGasPriceFunction = edge.func({
       source: fs.readFileSync(
@@ -610,7 +612,7 @@ export default class TransactionManager {
   }
   private initLocalGasPrice() {
     this.getDynamicGasPriceFunction = async (input: any, callback: any) => {
-      const requestObject = {
+      const requestObject: any = {
         jsonrpc: "2.0",
         method: "eth_gasPrice",
         params: [],
@@ -691,7 +693,7 @@ export default class TransactionManager {
         const tenPercent = sourcePrice.div(new BN(10));
         const increasedByTenPercent = sourcePrice.plus(tenPercent);
         this.rpcGas = increasedByTenPercent.toFixed(0).toString(); // "100000000000000000000000000";
-        systemOutput.debug("🚛 rpcGas set :", this.rpcGas);
+        systemOutput.debug(`🚛 [dotnet:${this.dotnetEnable}] rpcGas set  :`, this.rpcGas);
       }
     } catch (e) {
       systemOutput.error(e);
@@ -888,7 +890,7 @@ export default class TransactionManager {
       : undefined;
   };
 
-  getPaddingList = async () => {};
+  getPaddingList = async () => { };
 
   sendTransactionLocalPadding = async (
     transactionRequest: TransactionRequestCC
@@ -904,12 +906,12 @@ export default class TransactionManager {
   };
 
   //Content to be optimized
-  sendTransactionChainPadding = async () => {};
+  sendTransactionChainPadding = async () => { };
 
   //Content to be optimized
-  sendTransactionFastest = async () => {};
+  sendTransactionFastest = async () => { };
 
-  cancelPaddingTransaction = async () => {};
+  cancelPaddingTransaction = async () => { };
 
   getStatus = async () => {
     return {

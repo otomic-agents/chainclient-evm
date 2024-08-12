@@ -1,9 +1,9 @@
 import { systemOutput } from "./systemOutput";
 
-export function throttle(func, delay) {
+export function throttle(func: Function, delay: number) {
     let lastCall = 0;
-    let lastArg;
-    return function (...args) {
+    let lastArg: any;
+    return function (...args: any[]) {
         const now = Date.now();
         if (now - lastCall < delay) {
             lastArg = args;
@@ -15,7 +15,7 @@ export function throttle(func, delay) {
     };
 }
 export class throttledLog {
-    private throttle = undefined;
+    private throttle: any = undefined;
     constructor(time = 10000) {
         this.throttle = throttle((message: string) => {
             systemOutput.debug(message)

@@ -82,7 +82,7 @@ const createCallback = (
         retries: 10,
         minTimeout: 1000, // 1 second
         maxTimeout: Infinity,
-        onRetry: (error, attempt) => {
+        onRetry: (error:any, attempt:any) => {
             systemOutput.debug(`attempt ${attempt}`);
             systemOutput.error(error)
         },

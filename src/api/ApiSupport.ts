@@ -22,7 +22,7 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
         } = {}
 
         const on_height_update_url = callbackUrl.on_height_update
-        const mergeData = (event) => {
+        const mergeData = (event: any) => {
 
             const height = getFlagHeight(event.event.blockNumber)
             if (blockNumberCache[height] == undefined) {
@@ -33,7 +33,7 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
             } else {
                 blockNumberCache[height].data.push(event)
             }
-            
+
         }
 
         monitor.watchHeight(
@@ -71,15 +71,15 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
                                     }
                                 })
                         },
-                        {
-                            retries: 10,
-                            minTimeout: 1000, // 1 second
-                            maxTimeout: Infinity,
-                            onRetry: (error, attempt) => {
-                                systemOutput.debug(`attempt ${attempt}`);
-                                systemOutput.error(error)
-                            },
-                        });
+                            {
+                                retries: 10,
+                                minTimeout: 1000, // 1 second
+                                maxTimeout: Infinity,
+                                onRetry: (error, attempt) => {
+                                    systemOutput.debug(`attempt ${attempt}`);
+                                    systemOutput.error(error)
+                                },
+                            });
                     }
                 }
             }
@@ -291,7 +291,7 @@ export default class ApiSupport {
                 systemOutput.debug('callbackUrl is already registered for support reputation history endpoind', startBlock, endBlock, callbackUrl, merge)
                 return
             }
-            
+
             startReputationHistoryTask(startBlock, endBlock, callbackUrl, ctx.rpcClient, config, merge)
 
             ctx.response.body = {
@@ -336,10 +336,10 @@ export default class ApiSupport {
             }
 
             const mergeData = watchHeight(callbackUrl, ctx.monitor, true)
-            
+
             watchReputation(ctx.monitor, callbackUrl.on_reputation, config, merge, mergeData)
 
-            
+
 
             ctx.response.body = {
                 code: 200,

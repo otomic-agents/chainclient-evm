@@ -60,6 +60,7 @@ export interface WalletConfig {
 export interface CommandTransfer {
     token: string
     sender_wallet_name: string
+    token_amount: string
 }
 
 export interface CommandTransferIn {

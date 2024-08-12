@@ -22,6 +22,7 @@ import {
   watchTransferOut,
 } from '../serverUtils/WatcherFactory'
 import { systemOutput } from '../utils/systemOutput'
+import Monitor from '../monitor/Monitor'
 
 const buildTransferIn = async (
   ctx: KoaCtx,
@@ -168,9 +169,8 @@ const forwardToTransactionManager = (ctx: KoaCtx, transaction: TransactionReques
   }
 }
 
-function getObjectHash(obj) {
-  // 将对象序列化为一个确定的字符串表示
-  function serializeObject(obj) {
+function getObjectHash(obj: any) {
+  function serializeObject(obj: any): any {
     if (typeof obj !== 'object' || obj === null) {
       return String(obj)
     }
@@ -192,10 +192,10 @@ function getObjectHash(obj) {
 function cacheByFirstParamHashDecorator(): any {
   const cacheMap = new Map()
 
-  return function (target, propertyKey, descriptor) {
+  return function (target: any, propertyKey: any, descriptor: any) {
     const originalMethod = descriptor.value
 
-    descriptor.value = function (...args) {
+    descriptor.value = function (...args: any[]) {
       const firstParam = args[0]
       const paramHash = getObjectHash(firstParam)
 
@@ -216,7 +216,7 @@ function cacheByFirstParamHashDecorator(): any {
 export default class ApiForLp {
   obridgeIface: ethers.utils.Interface | undefined
   @cacheByFirstParamHashDecorator()
-  private registerLpnode(requestBody, monitor, config) {
+  private registerLpnode(requestBody: any, monitor: Monitor, config: any) {
     let lpnode_server_url = requestBody.lpnode_server_url
     systemOutput.debug(lpnode_server_url)
     if (lpnode_server_url == undefined) {

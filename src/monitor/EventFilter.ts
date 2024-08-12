@@ -68,14 +68,14 @@ export default class EventFilter {
 
           let finishedEvent = 0;
           let dataMap: Map<string, { tx: any; block: any }> = new Map();
-          const downloadTasks = [];
+          const downloadTasks :any[]= [];
           if (self.monitor.evmRpcClient == undefined) {
             throw new Error("evmRpcClient not found");
           }
           events.forEach((log: any) => {
             downloadTasks.push(
               new Promise((resolve, reject) => {
-                const downloadResult = { tx: null, block: null };
+                const downloadResult:{tx:any,block:any} = { tx: null, block: null };
                 async.series(
                   [
                     function getTransactionReceipt(cb) {
