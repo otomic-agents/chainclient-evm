@@ -42,7 +42,7 @@ class MonitorManager {
     const monitor = new Monitor();
     monitor.setStartTime(new Date().getTime())
     monitor.setId(mid)
-    const filters: { filter_info: FilterInfo, callback: Function, statusInfo: MonitorWatchStatusInfo }[] = new Array()
+    const filters: { filter_info: FilterInfo, callback: Function, statusInfo: MonitorWatchStatusInfo }[] = []
     const dispatchStatus: { lastTime: number, isEnd: boolean } = { lastTime: 0, isEnd: false }
     const filterStatus: {
       lastTime: number
@@ -136,7 +136,7 @@ class MonitorManager {
           lastData: any
         },
         dispatchStatus: {
-          lastTime: Number
+          lastTime: number
         }
       }
     }[] = []

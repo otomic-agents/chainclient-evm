@@ -1,5 +1,5 @@
 import { systemOutput } from "./systemOutput";
-//@ts-ignore
+
 import { v4 as uuidv4 } from 'uuid';
 export function throttle(func: Function, delay: number) {
     let lastCall = 0;

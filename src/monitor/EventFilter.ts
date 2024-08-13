@@ -20,14 +20,14 @@ export default class EventFilter {
     this.monitor = _monitor;
     this.dispatcherEventList = [];
 
-    let self = this;
+    const self = this;
     const dispatcher = async () => {
       if (self.monitor.blockFetchTaskList == undefined)
         throw new Error("blockFetchTaskList undefined");
 
-      let blockFetchTaskList = self.monitor.blockFetchTaskList;
+      const blockFetchTaskList = self.monitor.blockFetchTaskList;
       while (blockFetchTaskList[0]?.step == 3) {
-        let task = blockFetchTaskList.shift();
+        const task = blockFetchTaskList.shift();
 
         self.dispatcherEventList.forEach((obj) => {
           if (task == undefined) {
@@ -47,19 +47,19 @@ export default class EventFilter {
     };
     this.dispatcherEventList.push(dispatcherDataHolder);
 
-    let self = this;
+    const self = this;
     const status = {
 
     }
-    let checkEvent = async (stop: Function) => {
+    const checkEvent = async (stop: Function) => {
       if (typeof this.monitor.onFilter() == "function") {
         this.monitor.onFilter()
       }
-      let blockFetchTaskList = dispatcherDataHolder.event_list;
+      const blockFetchTaskList = dispatcherDataHolder.event_list;
       EVENT_PROCESS_LOG.log("checkEvent still running");
       try {
         while (blockFetchTaskList[0]?.step == 3) {
-          let task = blockFetchTaskList.shift();
+          const task = blockFetchTaskList.shift();
           await new Promise(async (taskDone) => {
             if (task == undefined) {
               throw new Error("dispatcher error: blockFetchTaskList[0] gone");
@@ -73,7 +73,7 @@ export default class EventFilter {
             // console.log(events)
 
             let finishedEvent = 0;
-            let dataMap: Map<string, { tx: any; block: any }> = new Map();
+            const dataMap: Map<string, { tx: any; block: any }> = new Map();
             const downloadTasks: any[] = [];
             if (self.monitor.evmRpcClient == undefined) {
               throw new Error("evmRpcClient not found");
@@ -159,7 +159,7 @@ export default class EventFilter {
               console.log("<--------- tx");
               console.log(tx);
 
-              let eventParse = Web3EthAbi.decodeLog(
+              const eventParse = Web3EthAbi.decodeLog(
                 filter_info.event_data.inputs,
                 log.data,
                 log.topics.slice(1)
@@ -203,7 +203,7 @@ export default class EventFilter {
         systemOutput.error(e);
       }
     };
-    var stop = false;
+    let stop = false;
     for (; ;) {
       if (stop) {
         setInterval(() => {

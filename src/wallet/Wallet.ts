@@ -1,6 +1,6 @@
 import { ethers, BigNumber } from 'ethers'
 import { Redis } from 'ioredis'
-import { EvmConfig, EvmRpcClient, TokenInfo, WalletConfig } from '../interface/interface'
+import { EvmConfig, EvmRpcClient, WalletConfig } from '../interface/interface'
 import sleep from '../serverUtils/Sleeper'
 import { getKey } from '../serverUtils/SecretVaultUtils'
 import { systemOutput } from '../utils/systemOutput'
@@ -50,7 +50,7 @@ export default class Wallet {
   }
 
   isVault = (address: string) =>
-    new Promise<boolean>((resolve, reject) => {
+    new Promise<boolean>((resolve) => {
       if (this.walletSecrets == null || this.walletSecrets == undefined || typeof this.walletSecrets === 'string') {
         throw new Error('state error, no wallet in chainclient')
       }
@@ -125,7 +125,7 @@ export default class Wallet {
       throw new Error('state error, no wallet in chainclient')
     }
 
-    let balance_list: TokenBalance[] = []
+    const balance_list: TokenBalance[] = []
 
     console.log('syncBalance')
     console.log(JSON.stringify(this.walletSecrets))

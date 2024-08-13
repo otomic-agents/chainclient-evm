@@ -1,7 +1,7 @@
 import Router from "@koa/router";
 import { EvmConfig, KoaCtx } from "../interface/interface";
 import { MonitorManager } from "../monitor/MonitorManager";
-let Table = require('tty-table')
+const Table = require('tty-table')
 import * as _ from "lodash";
 export class ApiForStatus {
 
@@ -143,7 +143,7 @@ export class ApiForStatus {
             if (!m.blockEventFetcher) {
               return "--"
             }
-            let fetcherStatus: any[] = new Array();
+            const fetcherStatus: any[] = [];
             for (let i = 0; i < m.blockEventFetcher.getFetcher().length; i++) {
               fetcherStatus.push(m.blockEventFetcher.getFetcher()[i].fetchStatus)
             }
@@ -152,7 +152,7 @@ export class ApiForStatus {
           })(),
           "filters": (() => {
             let statusStr = ``
-            for (let i in s.filters) {
+            for (const i in s.filters) {
               const filter = s.filters[i];
               statusStr = statusStr + `${filter.filter_info.event_data["name"]}\n${JSON.stringify(filter.statusInfo)}` + `\n\n`
             }

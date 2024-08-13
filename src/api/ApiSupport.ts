@@ -25,7 +25,7 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
     const on_height_update_url = callbackUrl.on_height_update
 
     setInterval(() => {
-        for (let [k, v] of blockEventConfirm) {
+        for (const [k, v] of blockEventConfirm) {
             if (new Date().getTime() - v.createTime > 1000 * 60 * 10) {
                 systemOutput.warn(`delete ${k}`)
                 blockEventConfirm.delete(k)
@@ -133,7 +133,7 @@ const startHistoryTask = async (startBlock: number, endBlock: number, callbackUr
     const monitorName = `history-${startBlock}_${endBlock}`
     const historyMonitor = MonitorManager.getInst().createMonitor(monitorName)
     MonitorManager.getInst().initMoniterAsHistory(monitorName, client, startBlock, endBlock)
-    const filterIdList: string[] = new Array()
+    const filterIdList: string[] = []
     const mergeData = watchHeight(callbackUrl, historyMonitor, false, filterIdList)
 
     filterIdList.push(watchTransferOut(historyMonitor, callbackUrl.on_transfer_out, config, merge, mergeData))
@@ -150,7 +150,7 @@ const startReputationHistoryTask = async (startBlock: number, endBlock: number, 
     const monitorName = `reputation-history-${startBlock}_${endBlock}`
     const historyMonitor = MonitorManager.getInst().createMonitor(monitorName)
     MonitorManager.getInst().initMoniterAsHistory(monitorName, client, startBlock, endBlock)
-    const filterIdList: string[] = new Array()
+    const filterIdList: string[] = []
     const mergeData = watchHeight(callbackUrl, historyMonitor, true, filterIdList)
     filterIdList.push(watchReputation(historyMonitor, callbackUrl.on_reputation, config, merge, mergeData))
     historyMonitor.historyModeStart()
@@ -202,14 +202,14 @@ export default class ApiSupport {
                 return
             }
 
-            let cacheKey = sha256(JSON.stringify({
+            const cacheKey = sha256(JSON.stringify({
                 startBlock: startBlock,
                 endBlock: endBlock,
                 callbackUrl: callbackUrl,
                 merge: merge
             }))
 
-            let cache = this.registerCache.get('support_history')
+            const cache = this.registerCache.get('support_history')
             if (cache.has(cacheKey)) {
                 ctx.response.body = {
                     code: 30209,
@@ -248,12 +248,12 @@ export default class ApiSupport {
                 return
             }
 
-            let cacheKey = sha256(JSON.stringify({
+            const cacheKey = sha256(JSON.stringify({
                 callbackUrl: callbackUrl,
                 merge: merge
             }))
 
-            let cache = this.registerCache.get('support')
+            const cache = this.registerCache.get('support')
             if (cache.has(cacheKey)) {
                 ctx.response.body = {
                     code: 30209,
@@ -262,7 +262,7 @@ export default class ApiSupport {
                 systemOutput.debug("callbackUrl is already registered for support endpoind", callbackUrl, merge)
                 return
             }
-            const filteridList: string[] = new Array()
+            const filteridList: string[] = []
             const mergeData = watchHeight(callbackUrl, ctx.monitor, false, filteridList)
 
             filteridList.push(watchTransferOut(ctx.monitor, callbackUrl.on_transfer_out, config, merge, mergeData))
@@ -315,14 +315,14 @@ export default class ApiSupport {
                 return
             }
 
-            let cacheKey = sha256(JSON.stringify({
+            const cacheKey = sha256(JSON.stringify({
                 startBlock: startBlock,
                 endBlock: endBlock,
                 callbackUrl: callbackUrl,
                 merge: merge
             }))
 
-            let cache = this.registerCache.get('support_reputation_history')
+            const cache = this.registerCache.get('support_reputation_history')
             if (cache.has(cacheKey)) {
                 ctx.response.body = {
                     code: 30209,
@@ -360,12 +360,12 @@ export default class ApiSupport {
                 return
             }
 
-            let cacheKey = sha256(JSON.stringify({
+            const cacheKey = sha256(JSON.stringify({
                 callbackUrl: callbackUrl,
                 merge: merge
             }))
 
-            let cache = this.registerCache.get('support_reputation')
+            const cache = this.registerCache.get('support_reputation')
             if (cache.has(cacheKey)) {
                 ctx.response.body = {
                     code: 30209,
@@ -374,7 +374,7 @@ export default class ApiSupport {
                 systemOutput.debug("callbackUrl is already registered for support reputation endpoind", callbackUrl, merge)
                 return
             }
-            const filterIdList: string[] = new Array()
+            const filterIdList: string[] = []
             const mergeData = watchHeight(callbackUrl, ctx.monitor, true, filterIdList)
 
             filterIdList.push(watchReputation(ctx.monitor, callbackUrl.on_reputation, config, merge, mergeData))

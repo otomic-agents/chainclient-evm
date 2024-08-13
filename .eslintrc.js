@@ -1,18 +1,8 @@
-/*
- * @Description: 
- * @Usage: 
- * @Author: richen
- * @Date: 2022-05-27 11:00:00
- * @LastEditTime: 2023-12-24 10:19:43
- */
-/**
- * 
- */
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
   extends: [
-    'plugin:@typescript-eslint/recommended', // 使用@typescript-eslint/eslint-plugin的推荐规则
+    'plugin:@typescript-eslint/recommended',
     'plugin:jest/recommended',
   ],
   plugins: [
@@ -29,7 +19,7 @@ module.exports = {
   },
   rules: {
     "@typescript-eslint/no-explicit-any": "off",
-    // "@typescript-eslint/no-require-imports": "off",
+    "@typescript-eslint/no-require-imports": "off",
     "@typescript-eslint/no-var-requires": "off",
     "@typescript-eslint/member-ordering": "off",
     "@typescript-eslint/consistent-type-assertions": "off",
@@ -38,6 +28,7 @@ module.exports = {
     "@typescript-eslint/no-empty-interface": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-this-alias": "off",
     "@typescript-eslint/ban-types": ["error",
       {
         "types": {

@@ -1,28 +1,19 @@
 {
-  // tab 大小为2个空格
   "editor.tabSize": 2,
-  // 字體大小
   "editor.fontSize": 15,
-  // 設置行高
   "editor.lineHeight": 23,
-  // 保存时格式化
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.formatOnType": true,
-  // 开启 vscode 文件路径导航
   "breadcrumbs.enabled": true,
-  // 显示 markdown 中英文切换时产生的特殊字符 
   "editor.renderControlCharacters": true,
-  // 设置 eslint 保存时自动修复
   "eslint.codeActionsOnSave.mode": "problems",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
   "files.eol": "\n",
-  // 控制是否显示 minimap
   "editor.minimap.enabled": true,
   "search.followSymlinks": false,
-  // 配置 glob 模式以排除文件和文件夹。
   "files.exclude": {
     "**/.classpath": true,
     "**/.DS_Store": true,

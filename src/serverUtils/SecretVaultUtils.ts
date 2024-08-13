@@ -3,11 +3,11 @@ import bcrypt from "bcrypt"
 import * as _ from "lodash"
 export const accessToken = () => new Promise<string>(async (result, reject) => {
 
-    let timestamp = (new Date().getTime() / 1000).toFixed(0);
-    let text = process.env.OS_API_KEY + timestamp + process.env.OS_API_SECRET;
-    let token = await bcrypt.hash(text, 10);
+    const timestamp = (new Date().getTime() / 1000).toFixed(0);
+    const text = process.env.OS_API_KEY + timestamp + process.env.OS_API_SECRET;
+    const token = await bcrypt.hash(text, 10);
 
-    let body = {
+    const body = {
         "app_key": process.env.OS_API_KEY,
         "timestamp": parseInt(timestamp),
         "token": token,

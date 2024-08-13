@@ -1,8 +1,6 @@
 import * as async from "async"
-import _ from "lodash";
-const { ethers } = require('ethers');
 // console.log(ethers)
-const RPC = "https://public.stackup.sh/api/v1/node/bsc-testnet"
+// const RPC = "https://public.stackup.sh/api/v1/node/bsc-testnet"
 
 function c() {
 

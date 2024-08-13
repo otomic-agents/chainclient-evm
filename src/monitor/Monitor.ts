@@ -84,7 +84,7 @@ export default class Monitor {
         this.evmRpcClient = evmRpcClient;
         this.evmConfig = evmConfig;
 
-        let cache_height = await this.redis.get(`${CACHE_KEY_EVENT_HEIGHT}_${evmConfig.system_chain_id
+        const cache_height = await this.redis.get(`${CACHE_KEY_EVENT_HEIGHT}_${evmConfig.system_chain_id
             }`);
         console.log("cache_key:", `${CACHE_KEY_EVENT_HEIGHT}_${evmConfig.system_chain_id
             }`);
@@ -180,7 +180,7 @@ export default class Monitor {
             await this.redis.set(`${CACHE_KEY_EVENT_HEIGHT}_${this.evmConfig.system_chain_id
                 }`, height);
         }
-        let watchIndex = 0;
+        const watchIndex = 0;
         for (const watcher of this.heightWatchers) {
             (async (height: number, watchIndex: number) => {
                 watchIndex++;

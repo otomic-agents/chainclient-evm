@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "ts-node src/index.ts",
-    "eslint": "eslint --ext .ts,.js ./"
+    "eslint": "eslint --ext .ts,.js ./",
+    "esfix": "eslint --fix --ext .ts,.js ./"
   },
   "author": "",
   "license": "Apache-2.0",
@@ -53,6 +54,7 @@
     "@types/koa-logger": "^3.1.5",
     "@types/needle": "^3.3.0",
     "@types/node": "^20.11.26",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^6.x.x",
     "@typescript-eslint/parser": "^6.x.x",
     "eslint": "^8.x.x",

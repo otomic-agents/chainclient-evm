@@ -3,7 +3,7 @@ import bodyParser from "koa-bodyparser";
 import koaLogger from 'koa-logger';
 import Router from "@koa/router";
 import Redis, { RedisOptions } from "ioredis";
-import { RequestManager, Client, HTTPTransport } from "@open-rpc/client-js";
+import { Client } from "@open-rpc/client-js";
 
 import Config from "./config/Config";
 
@@ -47,7 +47,7 @@ export default class ChainClientEVM {
     constructor() { }
     private prepareDb() {
         return new Promise((resolve, reject) => {
-            let opt: RedisOptions = {
+            const opt: RedisOptions = {
                 host: Config.redis_config.host,
                 port: parseInt(Config.redis_config.port as string),
                 db: Config.redis_config.db,
@@ -69,7 +69,7 @@ export default class ChainClientEVM {
 
     }
     start = async () => {
-        let timeout = new Promise(function (resolve, reject) {
+        const timeout = new Promise(function (resolve, reject) {
             setTimeout(function () {
                 reject('connection redis timeout');
             }, 1000 * 60);
@@ -107,7 +107,7 @@ export default class ChainClientEVM {
 
     initDB = async () => {
         console.log("initDB");
-        let opt: RedisOptions = {
+        const opt: RedisOptions = {
             host: Config.redis_config.host,
             port: parseInt(Config.redis_config.port as string),
             db: Config.redis_config.db,
@@ -141,7 +141,7 @@ export default class ChainClientEVM {
         this.evmRpcClient = { /* Prevent blockage of subsequent program execution when frequency limiting,
             no response, etc. occur, and create a new connection for request each time */
             get: (): Client => { // systemOutput.debug("rpc url is: ",this.rpcUrl)
-                let client: any = new HttpRpcClient(this.rpcUrl)
+                const client: any = new HttpRpcClient(this.rpcUrl)
 
                 return client;
             },
@@ -155,7 +155,7 @@ export default class ChainClientEVM {
                 this.rpcGeter.addBlack(this.rpcUrl);
                 this.changeUrl();
 
-                let thisUrl = `${this.rpcUrl
+                const thisUrl = `${this.rpcUrl
                     }`;
                 setTimeout(() => {
                     this.rpcGeter.blackList = this.rpcGeter.blackList.filter((item) => item != thisUrl);
@@ -176,7 +176,7 @@ export default class ChainClientEVM {
         await this.wallet.setConfig(this.redis, this.evmRpcClient, Config.evm_config);
         await this.transactionManager.setConfig(this.redis, this.wallet, this.evmRpcClient, Config.evm_config);
 
-        let opt: RedisOptions = {
+        const opt: RedisOptions = {
             host: Config.redis_config.host,
             port: parseInt(Config.redis_config.port as string),
             db: Config.redis_config.statusDB,
@@ -186,7 +186,7 @@ export default class ChainClientEVM {
                 return delay;
             }
         };
-        let statusRedis = new Redis(opt);
+        const statusRedis = new Redis(opt);
         setInterval(() => {
             statusRedis.ping()
             // systemOutput.debug("send redis ping")

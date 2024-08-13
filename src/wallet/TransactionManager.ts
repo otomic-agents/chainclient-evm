@@ -3,7 +3,7 @@ import needle from "needle";
 import bcrypt from "bcrypt";
 import Wallet from "./Wallet";
 const path = require("path");
-var fs = require("fs");
+const fs = require("fs");
 import Config from "../config/Config";
 import {
   EvmConfig,
@@ -28,6 +28,7 @@ let CACHE_KEY_LOCAL_FAILED_LIST = "CACHE_KEY_LOCAL_FAILED_LIST";
 const MAX_GET_TRANSACTION_RECEIPT_NUMBER = 35;
 const MAX_MESSAGE = 10;
 let baseNetAppPath: string | undefined;
+let edge: any = null;
 if (_.get(process, "env.USE_DOTNET", "false") === "true") {
   process.env.EDGE_USE_CORECLR = "1";
   baseNetAppPath = path.join(
@@ -35,7 +36,7 @@ if (_.get(process, "env.USE_DOTNET", "false") === "true") {
     "../../dotnet/StartUp/bin/Debug/net8.0"
   );
   process.env.EDGE_APP_ROOT = baseNetAppPath;
-  var edge = require("edge-js");
+  edge = require("edge-js");
 }
 
 const getMaxGasPrice = (evmConfig: EvmConfig): string => {
@@ -110,7 +111,7 @@ class TransactionCheckLoop {
   evmConfig: EvmConfig;
   failNum: number;
   getTransactionReceiptFailNum: number;
-  errorMessage: string[] = new Array();
+  errorMessage: string[] = [];
 
   constructor(
     wallet: Wallet,
@@ -146,11 +147,11 @@ class TransactionCheckLoop {
   }
   vaultSign = (txData: any, evmConfig: EvmConfig, secert_id: string) =>
     new Promise(async (result, reject) => {
-      let timestamp = (new Date().getTime() / 1000).toFixed(0);
-      let text = vault.OS_API_KEY + timestamp + vault.OS_API_SECRET;
-      let token = await bcrypt.hash(text, 10);
+      const timestamp = (new Date().getTime() / 1000).toFixed(0);
+      const text = vault.OS_API_KEY + timestamp + vault.OS_API_SECRET;
+      const token = await bcrypt.hash(text, 10);
 
-      let body = {
+      const body = {
         app_key: vault.OS_API_KEY,
         timestamp: parseInt(timestamp),
         token: token,
@@ -162,7 +163,7 @@ class TransactionCheckLoop {
         },
       };
 
-      let accessToken = () =>
+      const accessToken = () =>
         new Promise<string>((result, reject) => {
           try {
             needle.post(
@@ -190,7 +191,7 @@ class TransactionCheckLoop {
           }
         });
 
-      let sign = (txData: any, at: string, evmConfig: EvmConfig) =>
+      const sign = (txData: any, at: string, evmConfig: EvmConfig) =>
         new Promise((result, reject) => {
           try {
             needle.post(
@@ -249,8 +250,8 @@ class TransactionCheckLoop {
           }
         });
 
-      let at: string = await accessToken();
-      let resp = await sign(txData, at, evmConfig);
+      const at: string = await accessToken();
+      const resp = await sign(txData, at, evmConfig);
       result(resp);
     });
 
@@ -315,7 +316,7 @@ class TransactionCheckLoop {
   ) {
     systemOutput.debug("send new transaction");
     //get gas_price
-    let gas_price = await this.paddingListHolder.getDynamicGasPrice();
+    const gas_price = await this.paddingListHolder.getDynamicGasPrice();
     if (gas_price == "-2") {
       systemOutput.error("Gas is too high, refusing transaction.");
       return;
@@ -357,7 +358,7 @@ class TransactionCheckLoop {
           (callback: Function) => {
             (async () => {
               try {
-                let gas_limit = await provider.estimateGas(
+                const gas_limit = await provider.estimateGas(
                   lfirst as TransactionRequest
                 );
                 lfirst.gasLimit = gas_limit.add(10000);
@@ -409,17 +410,17 @@ class TransactionCheckLoop {
                   (await this.wallet.isVault(lfirst.from))
                 ) {
                   console.log("Vault account Transaction");
-                  let provider = new ethers.providers.JsonRpcProvider(
+                  const provider = new ethers.providers.JsonRpcProvider(
                     this.evmConfig.rpc_url
                   );
-                  let nonce = await provider.getTransactionCount(lfirst.from);
+                  const nonce = await provider.getTransactionCount(lfirst.from);
                   lfirst.nonce = nonce;
 
-                  let secert_id = await this.wallet.getWallet(lfirst.from);
+                  const secert_id = await this.wallet.getWallet(lfirst.from);
                   if (secert_id == undefined)
                     throw new Error("state error secert_id undefined");
 
-                  let signed = await this.vaultSign(
+                  const signed = await this.vaultSign(
                     lfirst,
                     this.evmConfig,
                     secert_id as string
@@ -488,10 +489,10 @@ class TransactionCheckLoop {
                   `[key point] [${this.getTransactionReceiptFailNum}] get transactionReceipt , transactionHash:`,
                   lfirst.transactionHash
                 );
-                let provider = new ethers.providers.JsonRpcProvider(
+                const provider = new ethers.providers.JsonRpcProvider(
                   this.evmConfig.rpc_url
                 );
-                let transactionReceipt = await provider.getTransactionReceipt(
+                const transactionReceipt = await provider.getTransactionReceipt(
                   lfirst.transactionHash
                 ); //
                 systemOutput.debug("transactionReceipt:");
@@ -547,7 +548,7 @@ class TransactionCheckLoop {
     });
   }
   check = async () => {
-    let lfirstDataString = this.paddingListHolder.getFirst();
+    const lfirstDataString = this.paddingListHolder.getFirst();
     if (lfirstDataString == undefined) {
       setTimeout(() => {
         LOOP_STATUS_LOG.log(
@@ -558,7 +559,7 @@ class TransactionCheckLoop {
       return;
     }
     const lfirstData: TransactionRequestCC = JSON.parse(lfirstDataString);
-    let lfirst: TransactionRequestCC = {} as TransactionRequestCC;
+    const lfirst: TransactionRequestCC = {} as TransactionRequestCC;
     Object.assign(lfirst, lfirstData);
     delete lfirst.rawData;
 
@@ -654,8 +655,8 @@ export default class TransactionManager {
     let useDefaultGas = false;
     let stopTrade = false;
 
-    let maxGasPrice = getMaxGasPrice(this.evmConfig);
-    let rpcGas = this.rpcGas;
+    const maxGasPrice = getMaxGasPrice(this.evmConfig);
+    const rpcGas = this.rpcGas;
     if (maxGasPrice == "-1") {
       systemOutput.warn("No maximum gas set, using def value.");
       useDefaultGas = true;
@@ -762,7 +763,7 @@ export default class TransactionManager {
       await this.redis.del(CACHE_KEY_LOCAL_PADDING_LIST);
     }
 
-    let num = await this.redis.llen(CACHE_KEY_LOCAL_PADDING_LIST);
+    const num = await this.redis.llen(CACHE_KEY_LOCAL_PADDING_LIST);
     this.localPaddingList = await this.redis.lrange(
       CACHE_KEY_LOCAL_PADDING_LIST,
       0,
@@ -829,7 +830,7 @@ export default class TransactionManager {
 
     console.log("jumpApprove");
 
-    let walletInfos = await this.wallet.getWalletInfo();
+    const walletInfos = await this.wallet.getWalletInfo();
     if (walletInfos == undefined)
       throw new Error("state error walletInfos undefined");
     if (transaction.rawData == undefined)
@@ -837,8 +838,8 @@ export default class TransactionManager {
     if (transaction.rawData.token == undefined)
       throw new Error("state error transaction.rawData.token undefined");
 
-    let token = ethers.BigNumber.from(transaction.rawData.token).toHexString();
-    let wallet = walletInfos.filter((info) => {
+    const token = ethers.BigNumber.from(transaction.rawData.token).toHexString();
+    const wallet = walletInfos.filter((info) => {
       if (transaction.rawData == undefined)
         throw new Error("state error transaction.rawData undefined");
 
@@ -857,7 +858,7 @@ export default class TransactionManager {
       new ethers.providers.JsonRpcProvider(this.evmConfig.rpc_url)
     );
     try {
-      let allowance = await c.allowance(wallet.wallet_address, transaction.to);
+      const allowance = await c.allowance(wallet.wallet_address, transaction.to);
 
       if (
         new BN((allowance as BigNumber).toString()).comparedTo(
@@ -875,13 +876,13 @@ export default class TransactionManager {
       return;
     }
 
-    let erc20Interface = new ethers.utils.Interface(this.evmConfig.abi.erc20);
-    let calldata = erc20Interface.encodeFunctionData("approve", [
+    const erc20Interface = new ethers.utils.Interface(this.evmConfig.abi.erc20);
+    const calldata = erc20Interface.encodeFunctionData("approve", [
       transaction.to,
       wallet.balance_value,
     ]);
 
-    let transactionRequest = {
+    const transactionRequest = {
       to: token,
       from: wallet.wallet_address,
       data: calldata,
@@ -915,7 +916,7 @@ export default class TransactionManager {
     if (this.localPaddingList == undefined)
       throw new Error("state error localPaddingList undefined");
 
-    let newTransactionRequest = JSON.stringify(transactionRequest);
+    const newTransactionRequest = JSON.stringify(transactionRequest);
     await this.redis.rpush(CACHE_KEY_LOCAL_PADDING_LIST, newTransactionRequest);
     this.localPaddingList.push(newTransactionRequest);
   };

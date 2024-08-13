@@ -1,6 +1,3 @@
-import Koa from 'koa'
-import bodyParser from 'koa-bodyparser'
-import stringify from 'json-stringify-safe'
 const crypto = require('crypto')
 import Router from '@koa/router'
 import {
@@ -30,11 +27,11 @@ const buildTransferIn = async (
   gas: GasInfo,
   obridgeIface: ethers.utils.Interface
 ): Promise<TransactionRequestCC> => {
-  let wallet_address = await ctx.wallet.getAddress(command_transfer_in.sender_wallet_name)
+  const wallet_address = await ctx.wallet.getAddress(command_transfer_in.sender_wallet_name)
   if (!wallet_address) {
     throw new Error('wallet not found')
   }
-  let calldata = obridgeIface.encodeFunctionData('transferIn', [
+  const calldata = obridgeIface.encodeFunctionData('transferIn', [
     wallet_address, // address _sender,
     ethers.BigNumber.from(command_transfer_in.user_receiver_address).toHexString(), // address _dstAddress,
     ethers.BigNumber.from(command_transfer_in.token).toHexString(), // address _token,
@@ -47,7 +44,7 @@ const buildTransferIn = async (
     command_transfer_in.agreement_reached_time,
   ])
 
-  let transactionRequest: TransactionRequestCC = {
+  const transactionRequest: TransactionRequestCC = {
     to: ctx.config.evm_config.contract_address,
     from: wallet_address,
     data: calldata,
@@ -75,8 +72,8 @@ const buildTransferConfirm = async (
   gas: GasInfo,
   obridgeIface: ethers.utils.Interface
 ): Promise<TransactionRequestCC> => {
-  let wallet_address = await ctx.wallet.getAddress(command_transfer_confirm.sender_wallet_name)
-  let calldata = obridgeIface.encodeFunctionData('confirmTransferIn', [
+  const wallet_address = await ctx.wallet.getAddress(command_transfer_confirm.sender_wallet_name)
+  const calldata = obridgeIface.encodeFunctionData('confirmTransferIn', [
     wallet_address, // address _sender,
     ethers.BigNumber.from(command_transfer_confirm.user_receiver_address).toHexString(), // address _receiver,
     ethers.BigNumber.from(command_transfer_confirm.token).toHexString(), // address _token,
@@ -88,7 +85,7 @@ const buildTransferConfirm = async (
     command_transfer_confirm.agreement_reached_time,
   ])
 
-  let transactionRequest: TransactionRequestCC = {
+  const transactionRequest: TransactionRequestCC = {
     to: ctx.config.evm_config.contract_address,
     from: wallet_address,
     data: calldata,
@@ -114,8 +111,8 @@ const buildTransferRefund = async (
   gas: GasInfo,
   obridgeIface: ethers.utils.Interface
 ): Promise<TransactionRequestCC> => {
-  let wallet_address = await ctx.wallet.getAddress(command_transfer_refund.sender_wallet_name)
-  let calldata = obridgeIface.encodeFunctionData('refundTransferIn', [
+  const wallet_address = await ctx.wallet.getAddress(command_transfer_refund.sender_wallet_name)
+  const calldata = obridgeIface.encodeFunctionData('refundTransferIn', [
     wallet_address, // address _sender,
     ethers.BigNumber.from(command_transfer_refund.user_receiver_address).toHexString(), // address _receiver,
     ethers.BigNumber.from(command_transfer_refund.token).toHexString(), // address _token,
@@ -126,7 +123,7 @@ const buildTransferRefund = async (
     command_transfer_refund.agreement_reached_time,
   ])
 
-  let transactionRequest: TransactionRequestCC = {
+  const transactionRequest: TransactionRequestCC = {
     to: ctx.config.evm_config.contract_address,
     from: wallet_address,
     data: calldata,
@@ -217,7 +214,7 @@ export default class ApiForLp {
   obridgeIface: ethers.utils.Interface | undefined
   @cacheByFirstParamHashDecorator()
   private registerLpnode(requestBody: any, monitor: Monitor, config: any) {
-    let lpnode_server_url = requestBody.lpnode_server_url
+    const lpnode_server_url = requestBody.lpnode_server_url
     systemOutput.debug(lpnode_server_url)
     if (lpnode_server_url == undefined) {
       return {
@@ -265,9 +262,9 @@ export default class ApiForLp {
     })
 
     router.post(`/evm-client-${config.system_chain_id}/lpnode/transfer_in`, async (ctx, next) => {
-      let transaction_type = (ctx.request.body as any).transaction_type
-      let command_transfer_in = (ctx.request.body as any).command_transfer_in
-      let gas = (ctx.request.body as any).gas
+      const transaction_type = (ctx.request.body as any).transaction_type
+      const command_transfer_in = (ctx.request.body as any).command_transfer_in
+      const gas = (ctx.request.body as any).gas
 
       console.log('on transfer in')
       console.log('transaction_type:', transaction_type)
@@ -291,7 +288,7 @@ export default class ApiForLp {
         return
       }
       try {
-        let transaction = await buildTransferIn(ctx, command_transfer_in, gas, this.obridgeIface)
+        const transaction = await buildTransferIn(ctx, command_transfer_in, gas, this.obridgeIface)
 
         forwardToTransactionManager(ctx, transaction, transaction_type)
       } catch (e) {
@@ -312,9 +309,9 @@ export default class ApiForLp {
       console.log('on refund')
       console.log(ctx.request.body)
 
-      let transaction_type = (ctx.request.body as any).transaction_type
-      let command_transfer_refund = (ctx.request.body as any).command_transfer_refund
-      let gas = (ctx.request.body as any).gas
+      const transaction_type = (ctx.request.body as any).transaction_type
+      const command_transfer_refund = (ctx.request.body as any).command_transfer_refund
+      const gas = (ctx.request.body as any).gas
 
       if (this.obridgeIface == undefined) {
         ctx.response.body = {
@@ -323,7 +320,7 @@ export default class ApiForLp {
         }
         return
       }
-      let transaction = await buildTransferRefund(ctx, command_transfer_refund, gas, this.obridgeIface)
+      const transaction = await buildTransferRefund(ctx, command_transfer_refund, gas, this.obridgeIface)
 
       forwardToTransactionManager(ctx, transaction, transaction_type)
 
@@ -334,9 +331,9 @@ export default class ApiForLp {
     })
 
     router.post(`/evm-client-${config.system_chain_id}/lpnode/confirm`, async (ctx, next) => {
-      let transaction_type = (ctx.request.body as any).transaction_type
-      let command_transfer_confirm = (ctx.request.body as any).command_transfer_in_confirm
-      let gas = (ctx.request.body as any).gas
+      const transaction_type = (ctx.request.body as any).transaction_type
+      const command_transfer_confirm = (ctx.request.body as any).command_transfer_in_confirm
+      const gas = (ctx.request.body as any).gas
 
       console.log('on confirm in')
       console.log('transaction_type:', transaction_type)
@@ -352,7 +349,7 @@ export default class ApiForLp {
         }
         return
       }
-      let transaction = await buildTransferConfirm(ctx, command_transfer_confirm, gas, this.obridgeIface)
+      const transaction = await buildTransferConfirm(ctx, command_transfer_confirm, gas, this.obridgeIface)
 
       forwardToTransactionManager(ctx, transaction, transaction_type)
 

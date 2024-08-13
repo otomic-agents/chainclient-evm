@@ -1,6 +1,5 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { UniqueIDGenerator } from '../utils/comm';
-import { systemOutput } from '../utils/systemOutput';
 import https from 'https';
 import * as _ from "lodash"
 interface RequestArguments {
@@ -48,7 +47,7 @@ export class HttpRpcClient {
             if (error != undefined) {
                 throw new Error(`Request failed with message: ${_.get(error, "message", "")}`)
             }
-            let result = _.get(response, "data.result", undefined)
+            const result = _.get(response, "data.result", undefined)
             if (!result || result == undefined) {
                 throw new Error(`Request failed,result is empty ,status code: ${_.get(response, "status", 0)} ,response body ${_.get(response, "data")}`)
             }

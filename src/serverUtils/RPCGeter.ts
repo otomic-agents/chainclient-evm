@@ -15,12 +15,12 @@ export default class RPCGeter {
   };
 
   chooseOne = (chainId: number) =>
-    new Promise<string>((resolve, reject) => {
+    new Promise<string>((resolve) => {
       needle("get", "https://chainid.network/chains.json")
         .then(async (resp) => {
           for (const chainInfo of resp.body) {
             if (chainId == chainInfo.chainId) {
-              let url = await this.chooseAUrl(chainInfo.rpc);
+              const url = await this.chooseAUrl(chainInfo.rpc);
               console.log("choose url", url);
               resolve(url);
               return;
@@ -35,7 +35,7 @@ export default class RPCGeter {
 
   chooseAUrl = (urls: string[]) =>
     new Promise<string>(async (resolve, reject) => {
-      let heights: {
+      const heights: {
         url: string;
         height: number;
       }[] = [];
@@ -52,7 +52,7 @@ export default class RPCGeter {
             url: url,
             height: height,
           });
-        } catch (error) {}
+        } catch (error) { }
       }
 
       if (heights.length == 0) {

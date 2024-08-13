@@ -49,7 +49,7 @@ const verifySignature = (signature: any, value: any, chainId: number) => {
 const buildTransferInConfirm = async (ctx: KoaCtx, command_transfer_confirm: CommandTransferConfirm, gas: GasInfo, obridgeIface: ethers.utils.Interface): Promise<TransactionRequestCC> => {
 
     // let wallet_address = await ctx.wallet.getAddress(command_transfer_confirm.sender_wallet_name)
-    let calldata = obridgeIface.encodeFunctionData("confirmTransferIn", [
+    const calldata = obridgeIface.encodeFunctionData("confirmTransferIn", [
         command_transfer_confirm.sender,                                                                             // address _sender,
         ethers.BigNumber.from(command_transfer_confirm.user_receiver_address).toHexString(),        // address _receiver,
         ethers.BigNumber.from(command_transfer_confirm.token).toHexString(),                        // address _token,
@@ -61,7 +61,7 @@ const buildTransferInConfirm = async (ctx: KoaCtx, command_transfer_confirm: Com
         command_transfer_confirm.agreement_reached_time
     ])
 
-    let transactionRequest: TransactionRequestCC = {
+    const transactionRequest: TransactionRequestCC = {
         to: ctx.config.evm_config.contract_address,
         from: await ctx.wallet.getRelayAddress(),
         data: calldata,
@@ -83,8 +83,8 @@ const buildTransferInConfirm = async (ctx: KoaCtx, command_transfer_confirm: Com
 
 const buildTransferInRefund = async (ctx: KoaCtx, command_transfer_refund: CommandTransferRefund, gas: GasInfo, obridgeIface: ethers.utils.Interface): Promise<TransactionRequestCC> => {
 
-    let wallet_address = await ctx.wallet.getAddress(command_transfer_refund.sender_wallet_name)
-    let calldata = obridgeIface.encodeFunctionData("refundTransferIn", [
+    const wallet_address = await ctx.wallet.getAddress(command_transfer_refund.sender_wallet_name)
+    const calldata = obridgeIface.encodeFunctionData("refundTransferIn", [
         wallet_address,                                                                             // address _sender,
         ethers.BigNumber.from(command_transfer_refund.user_receiver_address).toHexString(),         // address _receiver,
         ethers.BigNumber.from(command_transfer_refund.token).toHexString(),                         // address _token,
@@ -95,7 +95,7 @@ const buildTransferInRefund = async (ctx: KoaCtx, command_transfer_refund: Comma
         command_transfer_refund.agreement_reached_time
     ])
 
-    let transactionRequest: TransactionRequestCC = {
+    const transactionRequest: TransactionRequestCC = {
         to: ctx.config.evm_config.contract_address,
         from: wallet_address,
         data: calldata,
@@ -117,7 +117,7 @@ const buildTransferInRefund = async (ctx: KoaCtx, command_transfer_refund: Comma
 
 const buildTransferOutConfirm = async (ctx: KoaCtx, command_transfer_confirm: CommandTransferOutConfirm, gas: GasInfo, obridgeIface: ethers.utils.Interface): Promise<TransactionRequestCC> => {
 
-    let calldata = obridgeIface.encodeFunctionData("confirmTransferOut", [
+    const calldata = obridgeIface.encodeFunctionData("confirmTransferOut", [
         command_transfer_confirm.sender,                                                                          // address _sender,
         command_transfer_confirm.user_receiver_address,        // address _receiver,
         command_transfer_confirm.token,                        // address _token,
@@ -131,7 +131,7 @@ const buildTransferOutConfirm = async (ctx: KoaCtx, command_transfer_confirm: Co
         command_transfer_confirm.agreement_reached_time
     ])
 
-    let transactionRequest: TransactionRequestCC = {
+    const transactionRequest: TransactionRequestCC = {
         to: ctx.config.evm_config.contract_address,
         from: await ctx.wallet.getRelayAddress(),
         data: calldata,
@@ -154,7 +154,7 @@ const buildTransferOutConfirm = async (ctx: KoaCtx, command_transfer_confirm: Co
 const buildTransferOutRefund = async (ctx: KoaCtx, command_transfer_refund: CommandTransferOutRefund, gas: GasInfo, obridgeIface: ethers.utils.Interface): Promise<TransactionRequestCC> => {
 
     
-    let calldata = obridgeIface.encodeFunctionData("refundTransferOut", [
+    const calldata = obridgeIface.encodeFunctionData("refundTransferOut", [
         command_transfer_refund.sender,                                                                             // address _sender,
         ethers.BigNumber.from(command_transfer_refund.user_receiver_address).toHexString(),         // address _receiver,
         ethers.BigNumber.from(command_transfer_refund.token).toHexString(),                         // address _token,
@@ -165,7 +165,7 @@ const buildTransferOutRefund = async (ctx: KoaCtx, command_transfer_refund: Comm
         command_transfer_refund.agreement_reached_time
     ])
 
-    let transactionRequest: TransactionRequestCC = {
+    const transactionRequest: TransactionRequestCC = {
         to: ctx.config.evm_config.contract_address,
         from: await ctx.wallet.getRelayAddress(),
         data: calldata,
@@ -218,7 +218,7 @@ export default class ApiForRelay{
         router.post(`/evm-client-${config.system_chain_id}/relay/register_relay`, async (ctx, next) => {
             console.log('registerRelay')
 
-            let relay_server_url = (ctx.request.body as any).relay_server_url
+            const relay_server_url = (ctx.request.body as any).relay_server_url
             console.log('relay_server_url:', relay_server_url)
     
             if(relay_server_url == undefined){
@@ -243,10 +243,10 @@ export default class ApiForRelay{
         router.post(`/evm-client-${config.system_chain_id}/relay/get_hashlock`, async (ctx, next) => {
             console.log('getHashLock')
 
-            let preimage = (ctx.request.body as any).preimage
+            const preimage = (ctx.request.body as any).preimage
             console.log('preimage:', preimage)
     
-            let hashlock = ethers.utils.keccak256(ethers.utils.solidityPack(['bytes32'], [preimage]))
+            const hashlock = ethers.utils.keccak256(ethers.utils.solidityPack(['bytes32'], [preimage]))
     
             ctx.response.body = {
                 code: 200,
@@ -255,11 +255,11 @@ export default class ApiForRelay{
         })
 
         router.post(`/evm-client-${config.system_chain_id}/relay/get_system_fee`, async (ctx, next) => {
-            let provider = new ethers.providers.JsonRpcProvider(ctx.config.evm_config.rpc_url)
-            let obridge = new ethers.Contract(ctx.config.evm_config.contract_address, ctx.config.evm_config.abi.obridge, provider)
+            const provider = new ethers.providers.JsonRpcProvider(ctx.config.evm_config.rpc_url)
+            const obridge = new ethers.Contract(ctx.config.evm_config.contract_address, ctx.config.evm_config.abi.obridge, provider)
     
             try {
-                let base_points_rate = await obridge.basisPointsRate()
+                const base_points_rate = await obridge.basisPointsRate()
     
                 ctx.response.body = {
                     code: 200,
@@ -295,9 +295,9 @@ export default class ApiForRelay{
         })
 
         router.post(`/evm-client-${config.system_chain_id}/relay/behalf/confirm_out`, async (ctx, next) => {
-            let transaction_type = (ctx.request.body as any).transaction_type
-            let command_transfer_confirm = (ctx.request.body as any).command_transfer_out_confirm
-            let gas = (ctx.request.body as any).gas
+            const transaction_type = (ctx.request.body as any).transaction_type
+            const command_transfer_confirm = (ctx.request.body as any).command_transfer_out_confirm
+            const gas = (ctx.request.body as any).gas
     
             console.log("on confirm out")
             console.log("transaction_type:", transaction_type)
@@ -314,7 +314,7 @@ export default class ApiForRelay{
                 // }
                 // return
             }
-            let transaction = await buildTransferOutConfirm(ctx, command_transfer_confirm, gas, this.obridgeIface)
+            const transaction = await buildTransferOutConfirm(ctx, command_transfer_confirm, gas, this.obridgeIface)
     
             forwardToTransactionManager(ctx, transaction, transaction_type)
     
@@ -325,9 +325,9 @@ export default class ApiForRelay{
         })
 
         router.post(`/evm-client-${config.system_chain_id}/relay/behalf/confirm_in`, async (ctx, next) => {
-            let transaction_type = (ctx.request.body as any).transaction_type
-            let command_transfer_confirm = (ctx.request.body as any).command_transfer_in_confirm
-            let gas = (ctx.request.body as any).gas
+            const transaction_type = (ctx.request.body as any).transaction_type
+            const command_transfer_confirm = (ctx.request.body as any).command_transfer_in_confirm
+            const gas = (ctx.request.body as any).gas
     
             console.log("on confirm in")
             console.log("transaction_type:", transaction_type)
@@ -344,7 +344,7 @@ export default class ApiForRelay{
                 // }
                 // return
             }
-            let transaction = await buildTransferInConfirm(ctx, command_transfer_confirm, gas, this.obridgeIface)
+            const transaction = await buildTransferInConfirm(ctx, command_transfer_confirm, gas, this.obridgeIface)
     
             forwardToTransactionManager(ctx, transaction, transaction_type)
     
@@ -358,9 +358,9 @@ export default class ApiForRelay{
             console.log('on refund out')
             console.log(ctx.request.body)
     
-            let transaction_type = (ctx.request.body as any).transaction_type
-            let command_transfer_refund = (ctx.request.body as any).command_transfer_refund
-            let gas = (ctx.request.body as any).gas
+            const transaction_type = (ctx.request.body as any).transaction_type
+            const command_transfer_refund = (ctx.request.body as any).command_transfer_refund
+            const gas = (ctx.request.body as any).gas
     
             if (this.obridgeIface == undefined) {
                 this.obridgeIface = new ethers.utils.Interface(ctx.config.evm_config.abi.obridge)
@@ -370,7 +370,7 @@ export default class ApiForRelay{
                 // }
                 // return
             }
-            let transaction = await buildTransferOutRefund(ctx, command_transfer_refund, gas, this.obridgeIface)
+            const transaction = await buildTransferOutRefund(ctx, command_transfer_refund, gas, this.obridgeIface)
     
             forwardToTransactionManager(ctx, transaction, transaction_type)
     
@@ -384,9 +384,9 @@ export default class ApiForRelay{
             console.log('on refund in')
             console.log(ctx.request.body)
     
-            let transaction_type = (ctx.request.body as any).transaction_type
-            let command_transfer_refund = (ctx.request.body as any).command_transfer_refund
-            let gas = (ctx.request.body as any).gas
+            const transaction_type = (ctx.request.body as any).transaction_type
+            const command_transfer_refund = (ctx.request.body as any).command_transfer_refund
+            const gas = (ctx.request.body as any).gas
     
             if (this.obridgeIface == undefined) {
                 this.obridgeIface = new ethers.utils.Interface(ctx.config.evm_config.abi.obridge)
@@ -396,7 +396,7 @@ export default class ApiForRelay{
                 // }
                 // return
             }
-            let transaction = await buildTransferInRefund(ctx, command_transfer_refund, gas, this.obridgeIface)
+            const transaction = await buildTransferInRefund(ctx, command_transfer_refund, gas, this.obridgeIface)
     
             forwardToTransactionManager(ctx, transaction, transaction_type)
     

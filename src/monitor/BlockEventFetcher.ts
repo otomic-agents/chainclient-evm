@@ -31,15 +31,15 @@ const get_events = async (evmRpcClient: EvmRpcClient, from: string, to: string, 
 };
 
 const startFetchEvent = (evmRpcClient: EvmRpcClient, blockFetchTaskList: BlockFetchTask[], monitor: Monitor) => {
-    let createEventFetcher = () => {
+    const createEventFetcher = () => {
         console.log("create event fetcher");
-        let fetchStatus = {
+        const fetchStatus = {
             lastFetchTime: 0,
             start: 0,
             end: 0,
             download: false,
         }
-        let run = async () => {
+        const run = async () => {
             fetchStatus.lastFetchTime = new Date().getTime();
             let task: BlockFetchTask | undefined = undefined;
             for (let i = 0; i < blockFetchTaskList.length; i++) {
@@ -89,9 +89,9 @@ const startFetchEvent = (evmRpcClient: EvmRpcClient, blockFetchTaskList: BlockFe
         return { run, fetchStatus };
     };
 
-    let fetchers: any[] = [];
+    const fetchers: any[] = [];
     while (fetchers.length < 1) {
-        let fetcher = createEventFetcher();
+        const fetcher = createEventFetcher();
         fetcher.run();
         fetchers.push(fetcher);
     }
@@ -115,7 +115,7 @@ export default class BlockEventFetcher {
     }
     private monitorTaskQueue() {
         setInterval(() => {
-            let task_number = this.getRuningTaskNumber();
+            const task_number = this.getRuningTaskNumber();
             // systemOutput.debug("Queue Status:");
             // console.table({ "Task Queue Length": task_number });
         }, 1000 * 20);
@@ -130,14 +130,14 @@ export default class BlockEventFetcher {
         return task_number;
     }
     private async startDispatch(blockFetchTaskList: BlockFetchTask[]) {
-        let self = this;
-        let next = () => {
+        const self = this;
+        const next = () => {
             setTimeout(() => {
                 dispatch();
             }, 5000);
         };
         console.log("create dispatcher");
-        let dispatch = async () => { // check task number
+        const dispatch = async () => { // check task number
             this.monitor.onDispatch();
             let task_number = this.getRuningTaskNumber();
             if (task_number > 10) {
@@ -147,8 +147,8 @@ export default class BlockEventFetcher {
             // create block object
             systemOutput.debug("dispatch? ", self.monitor.blockHeight > self.monitor.taskBlockEventNow, self.monitor.blockHeight, self.monitor.taskBlockEventNow);
             while (self.monitor.blockHeight > self.monitor.taskBlockEventNow && task_number < 100) {
-                let block_start = self.monitor.taskBlockEventNow + 1;
-                let block_end: number = self.monitor.blockHeight - self.monitor.taskBlockEventNow > 5 ? self.monitor.taskBlockEventNow + 5 : self.monitor.blockHeight;
+                const block_start = self.monitor.taskBlockEventNow + 1;
+                const block_end: number = self.monitor.blockHeight - self.monitor.taskBlockEventNow > 5 ? self.monitor.taskBlockEventNow + 5 : self.monitor.blockHeight;
                 blockFetchTaskList.push({
                     step: 1, // 1:wait 2:fetching 3:finished
                     event_data: undefined,
@@ -174,7 +174,7 @@ export default class BlockEventFetcher {
     }
     private async monitorLatestHeight() {
         try {
-            let height = await this.getAndSetLatestHeight();
+            const height = await this.getAndSetLatestHeight();
             systemOutput.debug(`Loop update height sucessed, the latest height ${height}`);
         } catch (e) {
             systemOutput.error("monitorlatestHeight error:", e);
@@ -210,7 +210,7 @@ export default class BlockEventFetcher {
             this.monitor.blockFetchTaskList = [];
         }
 
-        let blockFetchTaskList = this.monitor.blockFetchTaskList;
+        const blockFetchTaskList = this.monitor.blockFetchTaskList;
 
         await this.startDispatch(blockFetchTaskList);
 
@@ -266,7 +266,7 @@ export default class BlockEventFetcher {
             callback(error, null);
             return;
         }
-        let printHeight = (hexString: string) => {
+        const printHeight = (hexString: string) => {
             if (!hexString || hexString == "") {
                 return "---";
             }
