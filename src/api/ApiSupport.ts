@@ -27,7 +27,7 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
     setInterval(() => {
         for (let [k, v] of blockEventConfirm) {
             if (new Date().getTime() - v.createTime > 1000 * 60 * 10) {
-                systemOutput.warn("delete ${k}")
+                systemOutput.warn(`delete ${k}`)
                 blockEventConfirm.delete(k)
             }
         }

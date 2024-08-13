@@ -18,6 +18,7 @@ import * as _ from "lodash";
 import { throttledLog } from "../utils/comm";
 const { dev, vault } = Config;
 import * as async from "async";
+import * as asyncLib from "async"
 import { SystemBus } from "../bus/bus";
 import axios from "axios";
 const LOOP_STATUS_LOG = new throttledLog();
@@ -326,120 +327,131 @@ class TransactionCheckLoop {
     }
     let provider: any;
     return new Promise((resolve) => {
-      async.waterfall(
+      asyncLib.waterfall(
         [
-          async (callback: Function) => {
-            try {
-              provider = new ethers.providers.JsonRpcProvider(
-                this.evmConfig.rpc_url
-              );
-              callback(null);
-            } catch (e) {
-              callback(
-                new SendTransactionError(
-                  0,
-                  `init provider error:${e.toString()}`
-                )
-              );
-            }
-          },
-          async (callback: Function) => {
-            lfirst.value = ethers.BigNumber.from(lfirst.value);
-            lfirst.gasLimit = 500000;
-            callback(null);
-          },
-          async (callback: Function) => {
-            try {
-              let gas_limit = await provider.estimateGas(
-                lfirst as TransactionRequest
-              );
-              lfirst.gasLimit = gas_limit.add(10000);
-              callback(null, { needAllowance: false });
-            } catch (err) {
-              if (
-                err.reason ==
-                "execution reverted: ERC20: insufficient allowance" ||
-                err.reason ==
-                "execution reverted: ERC20: transfer amount exceeds allowance" ||
-                err.reason ==
-                "execution reverted: BEP20: transfer amount exceeds allowance"
-              ) {
-                callback(null, { needAllowance: true });
-              } else {
+          (callback: Function) => {
+            (async () => {
+              try {
+                provider = new ethers.providers.JsonRpcProvider(
+                  this.evmConfig.rpc_url
+                );
+                callback(null);
+              } catch (e) {
+                systemOutput.error(e);
                 callback(
                   new SendTransactionError(
                     0,
-                    `estimateGas error:${err.toString()}`
+                    `init provider error:${e.toString()}`
                   )
                 );
               }
-            }
+            })()
           },
-          // If necessary, carry out the operation.
-          async (allowanceInfo: { needAllowance: boolean }, callback: Function) => {
-            if (allowanceInfo.needAllowance == false) {
+          (callback: Function) => {
+            (async () => {
+              lfirst.value = ethers.BigNumber.from(lfirst.value);
+              lfirst.gasLimit = 500000;
               callback(null);
-              return;
-            }
-            try {
-              await this.paddingListHolder.jumpApprove(lfirstData);
-              callback(
-                new SendTransactionError(4, "loop execute on next tick")
-              );
-            } catch (err: any) {
-              callback(new SendTransactionError(3, err.toString()));
-            }
+            })()
           },
-          async (callback: Function) => {
-            try {
-              let transactionSended;
-              if (
-                (dev.dev && dev.dev_sign) ||
-                (await this.wallet.isVault(lfirst.from))
-              ) {
-                console.log("Vault account Transaction");
-                let provider = new ethers.providers.JsonRpcProvider(
-                  this.evmConfig.rpc_url
+          (callback: Function) => {
+            (async () => {
+              try {
+                let gas_limit = await provider.estimateGas(
+                  lfirst as TransactionRequest
                 );
-                let nonce = await provider.getTransactionCount(lfirst.from);
-                lfirst.nonce = nonce;
-
-                let secert_id = await this.wallet.getWallet(lfirst.from);
-                if (secert_id == undefined)
-                  throw new Error("state error secert_id undefined");
-
-                let signed = await this.vaultSign(
-                  lfirst,
-                  this.evmConfig,
-                  secert_id as string
-                );
-
-                transactionSended = await provider.sendTransaction(
-                  signed as string
-                );
-              } else {
-                console.log("Key account Transaction");
-                let client: any = await this.wallet.getWallet(lfirst.from);
-                if (client == undefined) throw new Error("client undefined");
-
-                client = (client as ethers.Wallet).connect(provider);
-                transactionSended = await client.sendTransaction(lfirst);
+                lfirst.gasLimit = gas_limit.add(10000);
+                callback(null, { needAllowance: false });
+              } catch (err) {
+                if (
+                  err.reason ==
+                  "execution reverted: ERC20: insufficient allowance" ||
+                  err.reason ==
+                  "execution reverted: ERC20: transfer amount exceeds allowance" ||
+                  err.reason ==
+                  "execution reverted: BEP20: transfer amount exceeds allowance"
+                ) {
+                  callback(null, { needAllowance: true });
+                } else {
+                  callback(
+                    new SendTransactionError(
+                      0,
+                      `estimateGas error:${err.toString()}`
+                    )
+                  );
+                }
               }
-              systemOutput.debug("transactionSended:", transactionSended);
+            })()
+          },
+          (allowanceInfo: { needAllowance: boolean }, callback: Function) => {
+            (async () => { // If necessary, carry out the operation.
+              if (allowanceInfo.needAllowance == false) {
+                callback(null);
+                return;
+              }
+              try {
+                await this.paddingListHolder.jumpApprove(lfirstData);
+                callback(
+                  new SendTransactionError(4, "loop execute on next tick")
+                );
+              } catch (err: any) {
+                callback(new SendTransactionError(3, err.toString()));
+              }
+            })()
+          }
+          ,
+          (callback: Function) => {
+            (async () => {
+              try {
+                let transactionSended;
+                if (
+                  (dev.dev && dev.dev_sign) ||
+                  (await this.wallet.isVault(lfirst.from))
+                ) {
+                  console.log("Vault account Transaction");
+                  let provider = new ethers.providers.JsonRpcProvider(
+                    this.evmConfig.rpc_url
+                  );
+                  let nonce = await provider.getTransactionCount(lfirst.from);
+                  lfirst.nonce = nonce;
 
-              lfirstData.transactionHash = transactionSended.hash;
-              lfirstData.sended = transactionSended;
-              await this.paddingListHolder.updateTransactionNow(lfirstData);
-              this.failNum = 0;
-              callback(null, lfirstData);
-            } catch (err: any) {
-              callback(
-                new SendTransactionError(
-                  1,
-                  `send Transaction error:${err.toString()}`
-                )
-              );
-            }
+                  let secert_id = await this.wallet.getWallet(lfirst.from);
+                  if (secert_id == undefined)
+                    throw new Error("state error secert_id undefined");
+
+                  let signed = await this.vaultSign(
+                    lfirst,
+                    this.evmConfig,
+                    secert_id as string
+                  );
+
+                  transactionSended = await provider.sendTransaction(
+                    signed as string
+                  );
+                } else {
+                  console.log("Key account Transaction");
+                  let client: any = await this.wallet.getWallet(lfirst.from);
+                  if (client == undefined) throw new Error("client undefined");
+
+                  client = (client as ethers.Wallet).connect(provider);
+                  transactionSended = await client.sendTransaction(lfirst);
+                }
+                systemOutput.debug("transactionSended:", transactionSended);
+
+                lfirstData.transactionHash = transactionSended.hash;
+                lfirstData.sended = transactionSended;
+                await this.paddingListHolder.updateTransactionNow(lfirstData);
+                this.failNum = 0;
+                callback(null, lfirstData);
+              } catch (err: any) {
+                callback(
+                  new SendTransactionError(
+                    1,
+                    `send Transaction error:${err.toString()}`
+                  )
+                );
+              }
+            })()
           },
         ],
         (err) => {
@@ -469,45 +481,48 @@ class TransactionCheckLoop {
     return new Promise((resolve) => {
       async.waterfall(
         [
-          async (callback: Function) => {
-            try {
-              console.log(
-                `[key point] [${this.getTransactionReceiptFailNum}] get transactionReceipt , transactionHash:`,
-                lfirst.transactionHash
-              );
-              let provider = new ethers.providers.JsonRpcProvider(
-                this.evmConfig.rpc_url
-              );
-              let transactionReceipt = await provider.getTransactionReceipt(
-                lfirst.transactionHash
-              ); //
-              systemOutput.debug("transactionReceipt:");
-              systemOutput.debug(transactionReceipt);
+          (callback: Function) => {
+            (async (callback: Function) => {
+              try {
+                console.log(
+                  `[key point] [${this.getTransactionReceiptFailNum}] get transactionReceipt , transactionHash:`,
+                  lfirst.transactionHash
+                );
+                let provider = new ethers.providers.JsonRpcProvider(
+                  this.evmConfig.rpc_url
+                );
+                let transactionReceipt = await provider.getTransactionReceipt(
+                  lfirst.transactionHash
+                ); //
+                systemOutput.debug("transactionReceipt:");
+                systemOutput.debug(transactionReceipt);
 
-              if (
-                transactionReceipt != undefined &&
-                transactionReceipt != null
-              ) {
-                lfirstData.transactionReceipt = transactionReceipt;
-                if (transactionReceipt.status == 1) {
-                  this.paddingListHolder.onTransactionNowSucceed(lfirstData);
-                } else {
-                  //TODO Throws Error
-                  this.pushErrorMessage(
-                    `transaction execution failed ,receipt status is not [1]`
-                  );
+                if (
+                  transactionReceipt != undefined &&
+                  transactionReceipt != null
+                ) {
+                  lfirstData.transactionReceipt = transactionReceipt;
+                  if (transactionReceipt.status == 1) {
+                    this.paddingListHolder.onTransactionNowSucceed(lfirstData);
+                  } else {
+                    //TODO Throws Error
+                    this.pushErrorMessage(
+                      `transaction execution failed ,receipt status is not [1]`
+                    );
+                  }
                 }
+              } catch (e) {
+                this.pushErrorMessage(`transaction execution failed`);
+                systemOutput.error(
+                  `get [${lfirst.transactionHash}] transactionReceipt error:`,
+                  e
+                );
+              } finally {
+                callback(null);
               }
-            } catch (e) {
-              this.pushErrorMessage(`transaction execution failed`);
-              systemOutput.error(
-                `get [${lfirst.transactionHash}] transactionReceipt error:`,
-                e
-              );
-            } finally {
-              callback(null);
-            }
-          },
+            })(callback)
+          }
+
         ],
         (err) => {
           resolve(true);
