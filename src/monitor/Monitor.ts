@@ -9,11 +9,12 @@ import BlockEventFetcher from "./BlockEventFetcher";
 import EventFilter from "./EventFilter";
 import Redis from "ioredis";
 import { throttledLog } from '../utils/comm';
+import { systemOutput } from "../utils/systemOutput";
 const HEIGHTLOG = new throttledLog();
 const CACHE_KEY_EVENT_HEIGHT = "CACHE_KEY_EVENT_HEIGHT";
 // Monitor
 export interface HeightWatcher {
-    onHeightUpdate: (height: number) => Promise<void>;
+    onHeightUpdate: (height: number, filterId: string) => Promise<void>;
 }
 
 function alignToNearest5(num: number): number {
@@ -31,11 +32,6 @@ export default class Monitor {
     public onDispatch: Function = null;
     public onEndCall: Function = null
     public onDispatchTask: Function = null;
-    public onEnd() {
-        if (typeof this.onEndCall == "function") {
-            this.onEndCall();
-        }
-    }
     statusWatcher: MonitorWatchStatusInfo[];
     redis: Redis | undefined;
     evmRpcClient: EvmRpcClient | undefined;
@@ -67,6 +63,21 @@ export default class Monitor {
     }
     public setStartTime(time: number) {
         this.startTime = time;
+    }
+    public onEnd() {
+        if (typeof this.onEndCall == "function") {
+            this.onEndCall();
+        }
+        this.stopBlockEventFetcher();
+        this.stopEventFilter();
+    }
+    private stopBlockEventFetcher() {
+        if (this.blockEventFetcher != undefined) {
+            this.blockEventFetcher.stopFetch();
+        }
+    }
+    private stopEventFilter() {
+
     }
     setConfigModeChase = async (redis: Redis, evmRpcClient: EvmRpcClient, evmConfig: EvmConfig) => {
         this.redis = redis;
@@ -119,7 +130,6 @@ export default class Monitor {
             this.onWatch(filter_info, callback, statusInfo)
         }
         console.group("on watch");
-
         console.log("filter_info:");
         console.log(filter_info);
 
@@ -157,26 +167,26 @@ export default class Monitor {
     historyModeStart = () => {
         if (this.modeHistory && this.blockEventFetcher != undefined) {
             this.blockEventFetcher.startFetch();
-            console.log("----------------------------> historyModeStart");
+            systemOutput.debug("----> historyModeStart");
         }
     };
-
-    update_height = async (height: number) => {
+    update_height = async (height: number, filterId: string) => {
         HEIGHTLOG.log(`set height state: ${height}`);
         this.statusBlockHeight = height;
         this.blockHeightUpdateTime = new Date().getTime();
         if (!this.modeHistory) {
             if (this.redis == undefined || this.evmConfig == undefined)
                 throw new Error("db state error");
-
-
-
             await this.redis.set(`${CACHE_KEY_EVENT_HEIGHT}_${this.evmConfig.system_chain_id
                 }`, height);
         }
-
+        let watchIndex = 0;
         for (const watcher of this.heightWatchers) {
-            await watcher.onHeightUpdate(height);
+            (async (height: number, watchIndex: number) => {
+                watchIndex++;
+                // systemOutput.debug(`🤡 Send height event: ${watchIndex} ,height:${height}`)
+                await watcher.onHeightUpdate(height, filterId);
+            })(height, watchIndex)
         }
     };
 

@@ -39,6 +39,7 @@
     "tslog": "^4.9.3",
     "tty-table": "^4.2.3",
     "typescript": "^5.x.x",
+    "uuid": "^10.0.0",
     "web3-eth-abi": "^1.8.0",
     "xprofiler": "^2.6.1",
     "xtransit": "^2.5.0"

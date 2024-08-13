@@ -60,138 +60,144 @@ export default class EventFilter {
       try {
         while (blockFetchTaskList[0]?.step == 3) {
           let task = blockFetchTaskList.shift();
-
-          if (task == undefined) {
-            throw new Error("dispatcher error: blockFetchTaskList[0] gone");
-          }
-          this.monitor.onFilterData(task.event_data);
-          const events = task.event_data.filter((event: any) => {
-            return event.topics[0] == filter_info.topic_string;
-          });
-          // console.log(task)
-          // console.log('hit events')
-          // console.log(events)
-
-          let finishedEvent = 0;
-          let dataMap: Map<string, { tx: any; block: any }> = new Map();
-          const downloadTasks: any[] = [];
-          if (self.monitor.evmRpcClient == undefined) {
-            throw new Error("evmRpcClient not found");
-          }
-          events.forEach((log: any) => {
-            downloadTasks.push(
-              new Promise((resolve, reject) => {
-                const downloadResult: { tx: any, block: any } = { tx: null, block: null };
-                async.series(
-                  [
-                    function getTransactionReceipt(cb) {
-                      self.monitor.evmRpcClient
-                        .get()
-                        .request({
-                          method: "eth_getTransactionReceipt",
-                          params: [log.transactionHash],
-                        })
-                        .then((tx) => {
-                          downloadResult.tx = tx;
-                          cb(null, tx);
-                        })
-                        .catch((e) => {
-                          cb(e, null);
-                        });
-                    },
-                    function getBlockByNumber(cb) {
-                      self.monitor.evmRpcClient
-                        .get()
-                        .request({
-                          method: "eth_getBlockByNumber",
-                          params: [downloadResult.tx.blockNumber, false],
-                        })
-                        .then((block: any) => {
-                          downloadResult.block = block;
-                          cb(null, block);
-                        })
-                        .catch((e) => {
-                          cb(e, null);
-                        });
-                    },
-                  ],
-                  function done(err, result) {
-                    if (!err) {
-                      dataMap.set(log.transactionHash, {
-                        tx: downloadResult.tx,
-                        block: downloadResult.block,
-                      });
-                      resolve({
-                        tx: downloadResult.tx,
-                        block: downloadResult.block,
-                      });
-                    } else {
-                      reject("download faild");
-                    }
-                  }
-                );
-              })
-            );
-          });
-          if (downloadTasks.length > 0) {
-            systemOutput.debug(
-              `down load event data: ${task.block_start},${task.block_end}`
-            );
-            try {
-              await Promise.all(downloadTasks);
-            } catch (error) {
-              systemOutput.error(
-                "An error occurred while processing the promises:",
-                error
-              );
-              systemOutput.warn(
-                `retry process ${task.block_start}-${task.block_end}`
-              );
-              blockFetchTaskList.unshift(task);
-              break;
+          await new Promise(async (taskDone) => {
+            if (task == undefined) {
+              throw new Error("dispatcher error: blockFetchTaskList[0] gone");
             }
-          }
-          events.forEach((log: any) => {
-            const tx = dataMap.get(log.transactionHash).tx;
-            const respBlock = dataMap.get(log.transactionHash).block;
-            systemOutput.debug("Time line");
-            console.log("<--------- tx");
-            console.log(tx);
-
-            let eventParse = Web3EthAbi.decodeLog(
-              filter_info.event_data.inputs,
-              log.data,
-              log.topics.slice(1)
-            );
-            finishedEvent++;
-            callback({
-              event: log,
-              tx,
-              eventParse,
-              block: respBlock,
+            this.monitor.onFilterData(task.event_data);
+            const events = task.event_data.filter((event: any) => {
+              return event.topics[0] == filter_info.topic_string;
             });
-          });
+            // console.log(task)
+            // console.log('hit events')
+            // console.log(events)
 
-          (async () => {
-            if (task.event_data.length <= 0) {
-              systemOutput.warn("can't update height ,event data is empty....");
-              return;
+            let finishedEvent = 0;
+            let dataMap: Map<string, { tx: any; block: any }> = new Map();
+            const downloadTasks: any[] = [];
+            if (self.monitor.evmRpcClient == undefined) {
+              throw new Error("evmRpcClient not found");
             }
-            try {
-              await self.monitor.update_height(
-                parseInt(
-                  task.event_data[task.event_data.length - 1].blockNumber,
-                  16
-                )
+            events.forEach((log: any) => {
+              downloadTasks.push(
+                new Promise((resolve, reject) => {
+                  const downloadResult: { tx: any, block: any } = { tx: null, block: null };
+                  async.series(
+                    [
+                      function getTransactionReceipt(cb) {
+                        self.monitor.evmRpcClient
+                          .get()
+                          .request({
+                            method: "eth_getTransactionReceipt",
+                            params: [log.transactionHash],
+                          })
+                          .then((tx) => {
+                            downloadResult.tx = tx;
+                            cb(null, tx);
+                          })
+                          .catch((e) => {
+                            cb(e, null);
+                          });
+                      },
+                      function getBlockByNumber(cb) {
+                        self.monitor.evmRpcClient
+                          .get()
+                          .request({
+                            method: "eth_getBlockByNumber",
+                            params: [downloadResult.tx.blockNumber, false],
+                          })
+                          .then((block: any) => {
+                            downloadResult.block = block;
+                            cb(null, block);
+                          })
+                          .catch((e) => {
+                            cb(e, null);
+                          });
+                      },
+                    ],
+                    function done(err, result) {
+                      if (!err) {
+                        dataMap.set(log.transactionHash, {
+                          tx: downloadResult.tx,
+                          block: downloadResult.block,
+                        });
+                        resolve({
+                          tx: downloadResult.tx,
+                          block: downloadResult.block,
+                        });
+                      } else {
+                        reject("download faild");
+                      }
+                    }
+                  );
+                })
               );
-            } catch (error) {
-              systemOutput.error(
-                "update_height error:",
-                error,
-                task.event_data
+            });
+            if (downloadTasks.length > 0) {
+              systemOutput.debug(
+                `down load event data: ${task.block_start},${task.block_end}`
               );
+              try {
+                await Promise.all(downloadTasks);
+              } catch (error) {
+                systemOutput.error(
+                  "An error occurred while processing the promises:",
+                  error
+                );
+                systemOutput.warn(
+                  `retry process ${task.block_start}-${task.block_end}`
+                );
+                blockFetchTaskList.unshift(task);
+                taskDone(true);
+                return
+              }
             }
-          })();
+            events.forEach((log: any) => {
+              const tx = dataMap.get(log.transactionHash).tx;
+              const respBlock = dataMap.get(log.transactionHash).block;
+              systemOutput.debug("Time line");
+              console.log("<--------- tx");
+              console.log(tx);
+
+              let eventParse = Web3EthAbi.decodeLog(
+                filter_info.event_data.inputs,
+                log.data,
+                log.topics.slice(1)
+              );
+              finishedEvent++;
+              callback({
+                event: log,
+                tx,
+                eventParse,
+                block: respBlock,
+              });
+            });
+
+            (async () => {
+              if (task.event_data.length <= 0) {
+                systemOutput.warn("can't update height ,event data is empty....");
+                taskDone(true);
+                return;
+              }
+              try {
+                // systemOutput.debug("🐸", task.event_data[task.event_data.length - 1].blockNumber)
+                await self.monitor.update_height(
+                  task.block_end,
+                  filter_info.filter_id
+                );
+              } catch (error) {
+                systemOutput.error(
+                  "update_height error:",
+                  error,
+                  task.event_data
+                );
+              }
+              finally {
+                taskDone(true)
+                return;
+              }
+            })();
+          })
         }
       } catch (e) {
         systemOutput.error(e);

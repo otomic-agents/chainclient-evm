@@ -3,6 +3,7 @@ import retry from 'async-retry';
 import Monitor from "../monitor/Monitor";
 import { EvmConfig, FilterInfo } from "../interface/interface";
 import { systemOutput } from "../utils/systemOutput";
+import { UUIDGenerator } from "../utils/comm";
 
 const createCallback = (
   url: string,
@@ -62,7 +63,7 @@ const createCallback = (
 
     systemOutput.debug(`[key point] on event callback: type [${type}]`);
     systemOutput.debug(event);
-    
+
 
     if (merge) {
       mergeData(event);
@@ -70,22 +71,22 @@ const createCallback = (
     }
 
     retry(async () => {
-        systemOutput.debug(`[key point] notify event`, url)
-        await needle('post', url,
-            event,
-            {
-              headers: {
-                "Content-Type": "application/json",
-              },
-            })
+      systemOutput.debug(`[key point] notify event`, url)
+      await needle('post', url,
+        event,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
     }, {
-        retries: 10,
-        minTimeout: 1000, // 1 second
-        maxTimeout: Infinity,
-        onRetry: (error:any, attempt:any) => {
-            systemOutput.debug(`attempt ${attempt}`);
-            systemOutput.error(error)
-        },
+      retries: 10,
+      minTimeout: 1000, // 1 second
+      maxTimeout: Infinity,
+      onRetry: (error: any, attempt: any) => {
+        systemOutput.debug(`attempt ${attempt}`);
+        systemOutput.error(error)
+      },
     });
   };
 };
@@ -96,8 +97,9 @@ export const watchTransferOut = (
   config: EvmConfig,
   merge: boolean,
   mergeData: Function
-) => {
+): string => {
   const filter_info: FilterInfo = {
+    filter_id: UUIDGenerator.generateUUID(),
     contract_address: config.contract_address,
     topic_string: config.transfer_out.topic_string,
     event_data: config.transfer_out.event_data,
@@ -114,6 +116,7 @@ export const watchTransferOut = (
       Reputation: undefined,
     }
   );
+  return filter_info.filter_id
 };
 
 export const watchTransferIn = (
@@ -122,8 +125,9 @@ export const watchTransferIn = (
   config: EvmConfig,
   merge: boolean,
   mergeData: Function
-) => {
+): string => {
   const filter_info: FilterInfo = {
+    filter_id: UUIDGenerator.generateUUID(),
     contract_address: config.contract_address,
     topic_string: config.transfer_in.topic_string,
     event_data: config.transfer_in.event_data,
@@ -140,6 +144,7 @@ export const watchTransferIn = (
       Reputation: undefined,
     }
   );
+  return filter_info.filter_id
 };
 
 export const watchConfirmOut = (
@@ -148,8 +153,9 @@ export const watchConfirmOut = (
   config: EvmConfig,
   merge: boolean,
   mergeData: Function
-) => {
+): string => {
   const filter_info: FilterInfo = {
+    filter_id: UUIDGenerator.generateUUID(),
     contract_address: config.contract_address,
     topic_string: config.confirm_out.topic_string,
     event_data: config.confirm_out.event_data,
@@ -166,6 +172,7 @@ export const watchConfirmOut = (
       Reputation: undefined,
     }
   );
+  return filter_info.filter_id
 };
 
 export const watchConfirmIn = (
@@ -174,8 +181,9 @@ export const watchConfirmIn = (
   config: EvmConfig,
   merge: boolean,
   mergeData: Function
-) => {
+): string => {
   const filter_info: FilterInfo = {
+    filter_id: UUIDGenerator.generateUUID(),
     contract_address: config.contract_address,
     topic_string: config.confirm_in.topic_string,
     event_data: config.confirm_in.event_data,
@@ -192,6 +200,7 @@ export const watchConfirmIn = (
       Reputation: undefined,
     }
   );
+  return filter_info.filter_id
 };
 
 export const watchRefundOut = (
@@ -200,8 +209,9 @@ export const watchRefundOut = (
   config: EvmConfig,
   merge: boolean,
   mergeData: Function
-) => {
+): string => {
   const filter_info: FilterInfo = {
+    filter_id: UUIDGenerator.generateUUID(),
     contract_address: config.contract_address,
     topic_string: config.refunded_out.topic_string,
     event_data: config.refunded_out.event_data,
@@ -218,6 +228,7 @@ export const watchRefundOut = (
       Reputation: undefined,
     }
   );
+  return filter_info.filter_id
 };
 
 export const watchRefundIn = (
@@ -226,8 +237,9 @@ export const watchRefundIn = (
   config: EvmConfig,
   merge: boolean,
   mergeData: Function
-) => {
+): string => {
   const filter_info: FilterInfo = {
+    filter_id: UUIDGenerator.generateUUID(),
     contract_address: config.contract_address,
     topic_string: config.refunded_in.topic_string,
     event_data: config.refunded_in.event_data,
@@ -244,6 +256,7 @@ export const watchRefundIn = (
       Reputation: undefined,
     }
   );
+  return filter_info.filter_id
 };
 
 export const watchReputation = (
@@ -252,8 +265,9 @@ export const watchReputation = (
   config: EvmConfig,
   merge: boolean,
   mergeData: Function
-) => {
+): string => {
   const filter_info: FilterInfo = {
+    filter_id: UUIDGenerator.generateUUID(),
     contract_address: config.contract_reputation,
     topic_string: config.submit_complaint.topic_string,
     event_data: config.submit_complaint.event_data,
@@ -270,4 +284,5 @@ export const watchReputation = (
       Refund: undefined,
     }
   );
+  return filter_info.filter_id
 };

@@ -1,5 +1,6 @@
 import { systemOutput } from "./systemOutput";
-
+//@ts-ignore
+import { v4 as uuidv4 } from 'uuid';
 export function throttle(func: Function, delay: number) {
     let lastCall = 0;
     let lastArg: any;
@@ -25,6 +26,7 @@ export class throttledLog {
         this.throttle(message);
     }
 }
+
 export class UniqueIDGenerator {
     private static id: number = 0;
 
@@ -37,5 +39,10 @@ export class UniqueIDGenerator {
         }
 
         return UniqueIDGenerator.id;
+    }
+}
+export class UUIDGenerator {
+    static generateUUID(): string {
+        return uuidv4();
     }
 }

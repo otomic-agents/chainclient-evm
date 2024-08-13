@@ -153,6 +153,7 @@ export interface BlockFetchTask {
 }
 
 export interface FilterInfo {
+    filter_id: string
     contract_address: string
     topic_string: string
     event_data: any

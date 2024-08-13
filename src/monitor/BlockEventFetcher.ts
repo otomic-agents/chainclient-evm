@@ -169,6 +169,9 @@ export default class BlockEventFetcher {
         dispatch();
     }
 
+    private stopDispatch() {
+        
+    }
     private async monitorLatestHeight() {
         try {
             let height = await this.getAndSetLatestHeight();
@@ -217,6 +220,9 @@ export default class BlockEventFetcher {
 
         const fetchers = startFetchEvent(this.monitor.evmRpcClient, blockFetchTaskList, this.monitor);
         this.fetchers = fetchers;
+    }
+    public async stopFetch() {
+        this.stopDispatch()
     }
     private async getAndSetLatestHeight(): Promise<number> {
         await this.blockHeight(

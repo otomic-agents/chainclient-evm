@@ -119,11 +119,10 @@ class MonitorManager {
     if (monitorIns.status.init == true) {
       throw new Error('monitor is inited');
     }
-    monitorIns.status.mode = MoniterWrokType.Realtime
+    monitorIns.status.mode = MoniterWrokType.History
     monitorIns.monitor.setConfigModeHistory(evmRpcClient, startBlock, endBlock);
   }
   public getMoniterStatus() {
-    // console.log(this.monitorList.entries())
     const monitors: {
       monitor: Monitor,
       status: {

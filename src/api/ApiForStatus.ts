@@ -114,7 +114,9 @@ export class ApiForStatus {
             }
             baseStr = baseStr + `fetcherSize:${fetcherSize}\n`
             const dispatchTime = s.dispatchStatus.lastTime;
-            baseStr = baseStr + `dispatchTime:${dispatchTime}`
+            baseStr = baseStr + `dispatchTime:${dispatchTime}\n`
+            const heightWatcherLength = m.heightWatchers.length;
+            baseStr = baseStr + `heightWatcher:${heightWatcherLength}`
             return baseStr
 
           })(),
@@ -168,6 +170,9 @@ export class ApiForStatus {
         statsTable
       }
       // console.log(result)
+    })
+    router.post("/statusHeight", async (ctx: KoaCtx) => {
+      ctx.body = "ok";
     })
   }
 }

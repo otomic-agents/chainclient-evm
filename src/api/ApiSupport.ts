@@ -12,97 +12,136 @@ function getFlagHeight(num: number): number {
     return Math.ceil(num / 5) * 5;
 }
 
-const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation: boolean) => {
-    if (callbackUrl.on_height_update != undefined) {
-
-        const blockNumberCache: {
-            [key: number]: {
-                hit: number
-                data: any[]
-            }
-        } = {}
-
-        const on_height_update_url = callbackUrl.on_height_update
-        const mergeData = (event: any) => {
-
-            const height = getFlagHeight(event.event.blockNumber)
-            if (blockNumberCache[height] == undefined) {
-                blockNumberCache[height] = {
-                    hit: 1,
-                    data: [event]
-                }
-            } else {
-                blockNumberCache[height].data.push(event)
-            }
-
-        }
-
-        monitor.watchHeight(
-            {
-                onHeightUpdate: async (heightIn) => {
-
-                    // fix last block no event
-                    // const height = heightIn
-                    const height = getFlagHeight(heightIn)
-
-                    if (blockNumberCache[height] == undefined) {
-                        blockNumberCache[height] = {
-                            hit: 1,
-                            data: []
-                        }
-                    } else {
-                        blockNumberCache[height].hit++
-                    }
-
-                    const doPost = isReputation ? blockNumberCache[height].hit >= 1 : blockNumberCache[height].hit >= 6
-
-                    if (doPost) {
-                        retry(async () => {
-                            systemOutput.debug("send onHeightUpdate ", on_height_update_url, height);
-                            const sendData = {
-                                type: 'update_height',
-                                height: height,
-                                data: blockNumberCache[height].data
-                            }
-                            await needle('post', on_height_update_url,
-                                sendData,
-                                {
-                                    headers: {
-                                        "Content-Type": "application/json"
-                                    }
-                                })
-                        },
-                            {
-                                retries: 10,
-                                minTimeout: 1000, // 1 second
-                                maxTimeout: Infinity,
-                                onRetry: (error, attempt) => {
-                                    systemOutput.debug(`attempt ${attempt}`);
-                                    systemOutput.error(error)
-                                },
-                            });
-                    }
-                }
-            }
-        )
-
-        return mergeData
+const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation: boolean, filteridList: string[]) => {
+    if (callbackUrl.on_height_update == undefined) {
+        return;
     }
+    const blockNumberCache: Map<number, {
+        hit: number
+        data: any[]
+    }> = new Map()
+    const blockEventConfirm: Map<number, { confirmCount: number, createTime: number }> = new Map();
+    let cursorBlock = -1;
+    const on_height_update_url = callbackUrl.on_height_update
+
+    setInterval(() => {
+        for (let [k, v] of blockEventConfirm) {
+            if (new Date().getTime() - v.createTime > 1000 * 60 * 10) {
+                systemOutput.warn("delete ${k}")
+                blockEventConfirm.delete(k)
+            }
+        }
+    }, 1000 * 10)
+    const doSend = (height: number) => {
+        retry(async () => {
+            systemOutput.debug("send onHeightUpdate ", on_height_update_url, height);
+            const sendData = {
+                type: 'update_height',
+                height: height,
+                data: blockNumberCache.get(height).data
+            }
+            await needle('post', on_height_update_url,
+                sendData,
+                {
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+        }, {
+            retries: 10,
+            minTimeout: 1000, // 1 second
+            maxTimeout: Infinity,
+            onRetry: (error, attempt) => {
+                systemOutput.debug(`attempt ${attempt}`);
+                systemOutput.error(error)
+            },
+        });
+    }
+    const sender = async () => {
+        for (const [key, _] of blockNumberCache) {
+            if (key < cursorBlock) {
+                try {
+                    await doSend(key)
+                } catch (e) {
+                    systemOutput.error(e)
+                } finally {
+                    blockNumberCache.delete(key)
+                }
+            }
+        }
+    }
+    const mergeData = (event: any) => {
+        const height = getFlagHeight(event.event.blockNumber)
+        const cachedData = blockNumberCache.get(height)
+        if (!cachedData) {
+            blockNumberCache.set(height, {
+                hit: 1,
+                data: [event]
+            })
+        } else {
+            cachedData.data.push(event)
+        }
+    }
+
+    process.nextTick(async () => {
+        for (; ;) {
+            await sender();
+            await new Promise((resolve) => { setTimeout(() => { resolve(true) }, 100 * 2) })
+        }
+    })
+    monitor.watchHeight(
+        {
+            onHeightUpdate: async (heightIn: number, filterId: string) => {
+                const flagHeight = getFlagHeight(heightIn)
+                const cachedData = blockNumberCache.get(flagHeight)
+                if (!cachedData) {
+                    blockNumberCache.set(flagHeight, {
+                        hit: 1,
+                        data: []
+                    })
+                }
+                if (filteridList.includes(filterId)) {
+                    // console.log("🐸🐸🐸🐸🐸", heightIn)
+                } else {
+                    // console.log("🦧🦧🦧🦧🦧", heightIn)
+                    return;
+                }
+
+                if (!blockEventConfirm.get(heightIn)) {
+                    blockEventConfirm.set(heightIn, { confirmCount: 1, createTime: new Date().getTime() })
+                } else {
+                    blockEventConfirm.get(heightIn).confirmCount = blockEventConfirm.get(heightIn).confirmCount + 1
+                }
+
+                if (isReputation && blockEventConfirm.get(heightIn).confirmCount >= 1) {
+                    cursorBlock = heightIn;
+                    return
+                }
+                if (blockEventConfirm.get(heightIn).confirmCount >= 6) {
+                    cursorBlock = heightIn;
+                    return
+                }
+            }
+        }
+    )
+
+    return mergeData
+
 }
 
 const startHistoryTask = async (startBlock: number, endBlock: number, callbackUrl: CallbackUrlBox, client: EvmRpcClient, config: EvmConfig, merge: boolean) => {
     const monitorName = `history-${startBlock}_${endBlock}`
     const historyMonitor = MonitorManager.getInst().createMonitor(monitorName)
-    MonitorManager.getInst().initMoniterAsHistory(monitorName,client,startBlock,endBlock)
+    MonitorManager.getInst().initMoniterAsHistory(monitorName, client, startBlock, endBlock)
+    const filterIdList: string[] = new Array()
+    const mergeData = watchHeight(callbackUrl, historyMonitor, false, filterIdList)
 
-    const mergeData = watchHeight(callbackUrl, historyMonitor, false)
-
-    watchTransferOut(historyMonitor, callbackUrl.on_transfer_out, config, merge, mergeData)
-    watchTransferIn(historyMonitor, callbackUrl.on_transfer_in, config, merge, mergeData)
-    watchConfirmOut(historyMonitor, callbackUrl.on_confirm_out, config, merge, mergeData)
-    watchConfirmIn(historyMonitor, callbackUrl.on_confirm_in, config, merge, mergeData)
-    watchRefundOut(historyMonitor, callbackUrl.on_refunded_out, config, merge, mergeData)
-    watchRefundIn(historyMonitor, callbackUrl.on_refunded_in, config, merge, mergeData)
+    filterIdList.push(watchTransferOut(historyMonitor, callbackUrl.on_transfer_out, config, merge, mergeData))
+    filterIdList.push(watchTransferIn(historyMonitor, callbackUrl.on_transfer_in, config, merge, mergeData))
+    filterIdList.push(watchConfirmOut(historyMonitor, callbackUrl.on_confirm_out, config, merge, mergeData))
+    filterIdList.push(watchConfirmIn(historyMonitor, callbackUrl.on_confirm_in, config, merge, mergeData))
+    filterIdList.push(watchRefundOut(historyMonitor, callbackUrl.on_refunded_out, config, merge, mergeData))
+    filterIdList.push(watchRefundIn(historyMonitor, callbackUrl.on_refunded_in, config, merge, mergeData))
 
     historyMonitor.historyModeStart()
 }
@@ -110,10 +149,10 @@ const startHistoryTask = async (startBlock: number, endBlock: number, callbackUr
 const startReputationHistoryTask = async (startBlock: number, endBlock: number, callbackUrl: CallbackUrlBox, client: EvmRpcClient, config: EvmConfig, merge: boolean) => {
     const monitorName = `reputation-history-${startBlock}_${endBlock}`
     const historyMonitor = MonitorManager.getInst().createMonitor(monitorName)
-    MonitorManager.getInst().initMoniterAsHistory(monitorName,client,startBlock,endBlock)
-
-    const mergeData = watchHeight(callbackUrl, historyMonitor, true)
-    watchReputation(historyMonitor, callbackUrl.on_reputation, config, merge, mergeData)
+    MonitorManager.getInst().initMoniterAsHistory(monitorName, client, startBlock, endBlock)
+    const filterIdList: string[] = new Array()
+    const mergeData = watchHeight(callbackUrl, historyMonitor, true, filterIdList)
+    filterIdList.push(watchReputation(historyMonitor, callbackUrl.on_reputation, config, merge, mergeData))
     historyMonitor.historyModeStart()
 }
 
@@ -223,15 +262,15 @@ export default class ApiSupport {
                 systemOutput.debug("callbackUrl is already registered for support endpoind", callbackUrl, merge)
                 return
             }
+            const filteridList: string[] = new Array()
+            const mergeData = watchHeight(callbackUrl, ctx.monitor, false, filteridList)
 
-            const mergeData = watchHeight(callbackUrl, ctx.monitor, false)
-
-            watchTransferOut(ctx.monitor, callbackUrl.on_transfer_out, config, merge, mergeData)
-            watchTransferIn(ctx.monitor, callbackUrl.on_transfer_in, config, merge, mergeData)
-            watchConfirmOut(ctx.monitor, callbackUrl.on_confirm_out, config, merge, mergeData)
-            watchConfirmIn(ctx.monitor, callbackUrl.on_confirm_in, config, merge, mergeData)
-            watchRefundOut(ctx.monitor, callbackUrl.on_refunded_out, config, merge, mergeData)
-            watchRefundIn(ctx.monitor, callbackUrl.on_refunded_in, config, merge, mergeData)
+            filteridList.push(watchTransferOut(ctx.monitor, callbackUrl.on_transfer_out, config, merge, mergeData))
+            filteridList.push(watchTransferIn(ctx.monitor, callbackUrl.on_transfer_in, config, merge, mergeData))
+            filteridList.push(watchConfirmOut(ctx.monitor, callbackUrl.on_confirm_out, config, merge, mergeData))
+            filteridList.push(watchConfirmIn(ctx.monitor, callbackUrl.on_confirm_in, config, merge, mergeData))
+            filteridList.push(watchRefundOut(ctx.monitor, callbackUrl.on_refunded_out, config, merge, mergeData))
+            filteridList.push(watchRefundIn(ctx.monitor, callbackUrl.on_refunded_in, config, merge, mergeData))
 
             ctx.response.body = {
                 code: 200,
@@ -335,10 +374,10 @@ export default class ApiSupport {
                 systemOutput.debug("callbackUrl is already registered for support reputation endpoind", callbackUrl, merge)
                 return
             }
+            const filterIdList: string[] = new Array()
+            const mergeData = watchHeight(callbackUrl, ctx.monitor, true, filterIdList)
 
-            const mergeData = watchHeight(callbackUrl, ctx.monitor, true)
-
-            watchReputation(ctx.monitor, callbackUrl.on_reputation, config, merge, mergeData)
+            filterIdList.push(watchReputation(ctx.monitor, callbackUrl.on_reputation, config, merge, mergeData))
 
 
 

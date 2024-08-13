@@ -27,39 +27,39 @@ export default class ErrorAlert {
         this.message_list.push(message)
     }
     start = (stop: Function, restart: Function, onMessageError: Function) => {
-        process.on('uncaughtException', (error: Error) => {
+        // process.on('uncaughtException', (error: Error) => {
 
-            console.log('on uncaughtException')
-            this.error_list.push(error)
-            console.log(error)
+        //     console.log('on uncaughtException')
+        //     this.error_list.push(error)
+        //     console.log(error)
 
-            stop()
+        //     stop()
 
-            setTimeout(() => restart(), 10000)
-        });
+        //     setTimeout(() => restart(), 10000)
+        // });
 
-        process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+        // process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
 
-            console.log('on unhandledRejection')
-            this.error_list.push(reason)
-            console.log(reason)
+        //     console.log('on unhandledRejection')
+        //     this.error_list.push(reason)
+        //     console.log(reason)
 
-            stop()
+        //     stop()
 
-            setTimeout(() => restart(), 10000)
-        });
+        //     setTimeout(() => restart(), 10000)
+        // });
 
-        setInterval(() => {
-            console.log('check error list', this.error_list.length)
-            if (this.error_list.length - this.last_error_size == 0) return
+        // setInterval(() => {
+        //     console.log('check error list', this.error_list.length)
+        //     if (this.error_list.length - this.last_error_size == 0) return
 
-            this.last_error_size = this.error_list.length
+        //     this.last_error_size = this.error_list.length
 
-            onMessageError({
-                number: this.last_error_size,
-                lastError: this.error_list[this.error_list.length - 1]
-            })
+        //     onMessageError({
+        //         number: this.last_error_size,
+        //         lastError: this.error_list[this.error_list.length - 1]
+        //     })
 
-        }, 1000 * 60 * 5)
+        // }, 1000 * 60 * 5)
     }
 }
