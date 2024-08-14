@@ -21,7 +21,7 @@ log.attachTransport((logObj) => {
   if (process.env["LOG_DEBUG"] == "true") {
     const baseLogItem = {
       "timestamp": new Date().getTime(),
-      "viewtime": new Date(new Date().getTime()).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" }),
+      // "viewtime": new Date(new Date().getTime()).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" }),
     }
     Object.assign(baseLogItem, logObj)
     const logsData = [
