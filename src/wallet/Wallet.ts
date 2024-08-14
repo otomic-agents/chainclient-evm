@@ -128,7 +128,8 @@ export default class Wallet {
     const balance_list: TokenBalance[] = []
 
     console.log('syncBalance')
-    console.log(JSON.stringify(this.walletSecrets))
+    // ⚠️  Warning: This area contains private keys
+    // console.log(JSON.stringify(this.walletSecrets))
     try {
       for (const wallet of this.walletSecrets) {
         if (wallet.web3Wallet == undefined && wallet.type == 'secret_vault') {
@@ -136,7 +137,7 @@ export default class Wallet {
         }
       }
     } catch (e) {
-      systemOutput.error(e);
+      systemOutput.error("sync balance error");
       systemOutput.warn("Restart in 30 seconds")
       await new Promise((resolve) => { setTimeout(() => { resolve(true) }, 1000 * 30) })
       process.exit()
