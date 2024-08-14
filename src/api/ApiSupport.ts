@@ -12,7 +12,7 @@ function getFlagHeight(num: number): number {
     return Math.ceil(num / 5) * 5;
 }
 
-const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation: boolean, filteridList: string[]) => {
+const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, filteridList: string[]) => {
     if (callbackUrl.on_height_update == undefined) {
         return;
     }
@@ -33,12 +33,17 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
         }
     }, 1000 * 10)
     const doSend = (height: number) => {
+        const STOREKEY = `height_updates_${monitor.evmConfig.system_chain_id}`
         retry(async () => {
-            systemOutput.debug("send onHeightUpdate ", on_height_update_url, height);
+            systemOutput.debug("-->", "send onHeightUpdate", on_height_update_url, height);
             const sendData = {
                 type: 'update_height',
                 height: height,
                 data: blockNumberCache.get(height).data
+            }
+            if (sendData.data.length > 0) {
+                systemOutput.debug("🐆")
+                monitor.redis.zadd(STOREKEY, Date.now(), JSON.stringify(sendData));
             }
             await needle('post', on_height_update_url,
                 sendData,
@@ -100,24 +105,16 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, isReputation
                         data: []
                     })
                 }
-                if (filteridList.includes(filterId)) {
-                    // console.log("🐸🐸🐸🐸🐸", heightIn)
-                } else {
-                    // console.log("🦧🦧🦧🦧🦧", heightIn)
-                    return;
+                if (!filteridList.includes(filterId)) {
+                    return
                 }
-
                 if (!blockEventConfirm.get(heightIn)) {
                     blockEventConfirm.set(heightIn, { confirmCount: 1, createTime: new Date().getTime() })
                 } else {
                     blockEventConfirm.get(heightIn).confirmCount = blockEventConfirm.get(heightIn).confirmCount + 1
                 }
-
-                if (isReputation && blockEventConfirm.get(heightIn).confirmCount >= 1) {
-                    cursorBlock = heightIn;
-                    return
-                }
-                if (blockEventConfirm.get(heightIn).confirmCount >= 6) {
+                // systemOutput.debug(blockEventConfirm.get(heightIn).confirmCount, filteridList.length)
+                if (blockEventConfirm.get(heightIn).confirmCount >= filteridList.length) {
                     cursorBlock = heightIn;
                     return
                 }
@@ -134,7 +131,7 @@ const startHistoryTask = async (startBlock: number, endBlock: number, callbackUr
     const historyMonitor = MonitorManager.getInst().createMonitor(monitorName)
     MonitorManager.getInst().initMoniterAsHistory(monitorName, client, startBlock, endBlock)
     const filterIdList: string[] = []
-    const mergeData = watchHeight(callbackUrl, historyMonitor, false, filterIdList)
+    const mergeData = watchHeight(callbackUrl, historyMonitor, filterIdList)
 
     filterIdList.push(watchTransferOut(historyMonitor, callbackUrl.on_transfer_out, config, merge, mergeData))
     filterIdList.push(watchTransferIn(historyMonitor, callbackUrl.on_transfer_in, config, merge, mergeData))
@@ -151,7 +148,7 @@ const startReputationHistoryTask = async (startBlock: number, endBlock: number, 
     const historyMonitor = MonitorManager.getInst().createMonitor(monitorName)
     MonitorManager.getInst().initMoniterAsHistory(monitorName, client, startBlock, endBlock)
     const filterIdList: string[] = []
-    const mergeData = watchHeight(callbackUrl, historyMonitor, true, filterIdList)
+    const mergeData = watchHeight(callbackUrl, historyMonitor, filterIdList)
     filterIdList.push(watchReputation(historyMonitor, callbackUrl.on_reputation, config, merge, mergeData))
     historyMonitor.historyModeStart()
 }
@@ -263,7 +260,7 @@ export default class ApiSupport {
                 return
             }
             const filteridList: string[] = []
-            const mergeData = watchHeight(callbackUrl, ctx.monitor, false, filteridList)
+            const mergeData = watchHeight(callbackUrl, ctx.monitor, filteridList)
 
             filteridList.push(watchTransferOut(ctx.monitor, callbackUrl.on_transfer_out, config, merge, mergeData))
             filteridList.push(watchTransferIn(ctx.monitor, callbackUrl.on_transfer_in, config, merge, mergeData))
@@ -375,7 +372,7 @@ export default class ApiSupport {
                 return
             }
             const filterIdList: string[] = []
-            const mergeData = watchHeight(callbackUrl, ctx.monitor, true, filterIdList)
+            const mergeData = watchHeight(callbackUrl, ctx.monitor, filterIdList)
 
             filterIdList.push(watchReputation(ctx.monitor, callbackUrl.on_reputation, config, merge, mergeData))
 

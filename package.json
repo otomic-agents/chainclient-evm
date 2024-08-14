@@ -38,6 +38,8 @@
     "koatty": "^3.11.4-2",
     "lodash": "^4.17.21",
     "needle": "^3.3.1",
+    "newrelic": "^12.1.0",
+    "tingyun": "file:tingyun-agent-nodejs-1.7.1.tar.gz",
     "ts-node": "^10.x.x",
     "tslog": "^4.9.3",
     "tty-table": "^4.2.3",

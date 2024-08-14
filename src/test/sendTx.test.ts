@@ -1,7 +1,8 @@
 import * as async from "async"
+import { systemOutput } from "../utils/systemOutput"
 // console.log(ethers)
 // const RPC = "https://public.stackup.sh/api/v1/node/bsc-testnet"
-
+systemOutput.debug({ a: 1, b: 2 }, "3")
 function c() {
 
     return new Promise((resolve) => {
