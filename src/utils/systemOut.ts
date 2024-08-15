@@ -1,12 +1,13 @@
 import { Logger, ILogObj } from "tslog";
-
+import * as _ from "lodash";
 const utc = require("dayjs/plugin/utc");
 const timezone = require("dayjs/plugin/timezone");
 const dayjs = require("dayjs");
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
 const log: Logger<ILogObj> = new Logger({ prettyLogTimeZone: "UTC" });
-import * as _ from "lodash";
+log.settings.minLevel = parseInt(_.get(process, "env.LOG_LEVEL", "3"))
 import { timeout } from "async";
 const axios = require('axios');
 
@@ -54,4 +55,4 @@ log.attachTransport((logObj) => {
       });
   }
 });
-export { log as systemOutput };
+export { log as SystemOut };

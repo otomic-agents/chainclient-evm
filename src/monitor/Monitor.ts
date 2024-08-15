@@ -9,7 +9,7 @@ import BlockEventFetcher from "./BlockEventFetcher";
 import EventFilter from "./EventFilter";
 import Redis from "ioredis";
 import { throttledLog } from '../utils/comm';
-import { systemOutput } from "../utils/systemOutput";
+import { SystemOut } from "../utils/systemOut";
 const HEIGHTLOG = new throttledLog();
 const CACHE_KEY_EVENT_HEIGHT = "CACHE_KEY_EVENT_HEIGHT";
 // Monitor
@@ -129,11 +129,8 @@ export default class Monitor {
         if (typeof this.onWatch == "function") {
             this.onWatch(filter_info, callback, statusInfo)
         }
-        console.group("on watch");
         console.log("filter_info:");
         console.log(filter_info);
-
-        console.log("fetchBlockRunning", this.fetchBlockRunning);
         if (this.blockEventFetcher == undefined) {
             this.blockEventFetcher = new BlockEventFetcher(this, this.modeHistory, this.blockHeight);
             if (this.modeHistory == false) {
@@ -148,15 +145,10 @@ export default class Monitor {
                 }
             }
         }
-
         if (this.eventFilter == undefined) {
             this.eventFilter = new EventFilter(this);
         }
-
         this.eventFilter.startFilter(filter_info, callback);
-
-        console.groupEnd();
-
         this.statusWatcher.push(statusInfo);
     };
 
@@ -167,11 +159,11 @@ export default class Monitor {
     historyModeStart = () => {
         if (this.modeHistory && this.blockEventFetcher != undefined) {
             this.blockEventFetcher.startFetch();
-            systemOutput.debug("----> historyModeStart");
+            SystemOut.debug("----> historyModeStart");
         }
     };
     update_height = async (height: number, filterId: string) => {
-        HEIGHTLOG.log(`set height state: ${height}`);
+        HEIGHTLOG.log(`set height state`, height);
         this.statusBlockHeight = height;
         this.blockHeightUpdateTime = new Date().getTime();
         if (!this.modeHistory) {

@@ -3,7 +3,7 @@ import { Redis } from 'ioredis'
 import { EvmConfig, EvmRpcClient, WalletConfig } from '../interface/interface'
 import sleep from '../serverUtils/Sleeper'
 import { getKey } from '../serverUtils/SecretVaultUtils'
-import { systemOutput } from '../utils/systemOutput'
+import { SystemOut } from '../utils/systemOut'
 
 const CACHE_KEY_walletSecrets = 'CACHE_KEY_LP_walletSecrets'
 
@@ -127,7 +127,6 @@ export default class Wallet {
 
     const balance_list: TokenBalance[] = []
 
-    console.log('syncBalance')
     // ⚠️  Warning: This area contains private keys
     // console.log(JSON.stringify(this.walletSecrets))
     try {
@@ -137,8 +136,8 @@ export default class Wallet {
         }
       }
     } catch (e) {
-      systemOutput.error("sync balance error");
-      systemOutput.warn("Restart in 30 seconds")
+      SystemOut.error("sync balance error");
+      SystemOut.warn("Restart in 30 seconds")
       await new Promise((resolve) => { setTimeout(() => { resolve(true) }, 1000 * 30) })
       process.exit()
     }
@@ -191,12 +190,12 @@ export default class Wallet {
 
         startCount++
         try {
-          systemOutput.debug('fetch', 'wallet:', balance.wallet_address, 'token:', balance.token)
+          SystemOut.debug('fetch', 'wallet:', balance.wallet_address, 'token:', balance.token)
           balance.balance_value = await this.tokenMap[balance.token].balanceOf(balance.wallet_address)
           if (balance.decimals == undefined) {
             balance.decimals = await this.tokenMap[balance.token].decimals()
           }
-          systemOutput.debug(JSON.stringify(balance))
+          SystemOut.debug(JSON.stringify(balance))
         } catch (error) {
           console.error('fetch balance error')
           console.error(error)

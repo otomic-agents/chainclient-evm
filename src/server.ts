@@ -25,7 +25,7 @@ import {
 } from "./serverUtils/WatcherFactory";
 import RPCGeter from "./serverUtils/RPCGeter";
 import { UniqueIDGenerator } from "./utils/comm";
-import { systemOutput } from "./utils/systemOutput";
+import { SystemOut } from "./utils/systemOut";
 import { HttpRpcClient } from "./serverUtils/HttpRpcClient";
 import { MonitorManager } from "./monitor/MonitorManager";
 import { ApiForStatus } from "./api/ApiForStatus";
@@ -60,7 +60,7 @@ export default class ChainClientEVM {
 
             this.redis = new Redis(opt);
             this.redis.on("reconnecting", () => {
-                systemOutput.debug("Connecting to the database")
+                SystemOut.debug("Connecting to the database")
             })
             this.redis.on("connect", () => {
                 resolve(true)
@@ -78,10 +78,10 @@ export default class ChainClientEVM {
             await Promise.race([this.prepareDb(), timeout])
         } catch (e) {
             if (e.toString().includes("connection redis timeout")) {
-                systemOutput.error("connection redis timeout")
+                SystemOut.error("connection redis timeout")
                 process.exit()
             } else {
-                systemOutput.error("connection redis timeout")
+                SystemOut.error("connection redis timeout")
                 process.exit()
             }
         }
@@ -202,7 +202,7 @@ export default class ChainClientEVM {
             watchTransferOut(this.monitor, Config.relay_server_url.on_transfer_out, Config.evm_config, false, undefined);
         }
         if (Config.relay_server_url.on_confirm_in != undefined && Config.relay_server_url.on_confirm_in != "") {
-            systemOutput.debug("watch confirm in ", Config.relay_server_url.on_confirm_in, "");
+            SystemOut.debug("watch confirm in ", Config.relay_server_url.on_confirm_in, "");
             watchConfirmIn(this.monitor, Config.relay_server_url.on_confirm_in, Config.evm_config, false, undefined)
         }
         if (Config.relay_server_url.on_confirm != undefined && Config.relay_server_url.on_confirm != "") {
@@ -242,7 +242,14 @@ export default class ChainClientEVM {
         app.context.rpcClient = this.evmRpcClient;
 
         app.use(bodyParser({}));
-        app.use(koaLogger());
+        app.use(async (ctx, next) => {
+            const start: any = new Date();
+            await next();
+            const end: any = new Date();
+            const duration = (end - start) / 1000;
+
+            SystemOut.info(`${ctx.request.method} ${ctx.request.url} ${duration.toFixed(2)} seconds`);
+        });
         app.use(this.router.routes()).use(this.router.allowedMethods());
         app.listen(Config.server_config.port);
 

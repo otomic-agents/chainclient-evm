@@ -1,7 +1,7 @@
 import { Redis } from 'ioredis';
 import Monitor from './Monitor';
 import { EvmConfig, EvmRpcClient, FilterInfo, MonitorWatchStatusInfo } from '../interface/interface';
-import { systemOutput } from '../utils/systemOutput';
+import { SystemOut } from '../utils/systemOut';
 import BlockEventFetcher from './BlockEventFetcher';
 
 const { v4: uuidv4 } = require('uuid');

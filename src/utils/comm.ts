@@ -1,4 +1,4 @@
-import { systemOutput } from "./systemOutput";
+import { SystemOut } from "./systemOut";
 
 import { v4 as uuidv4 } from 'uuid';
 export function throttle(func: Function, delay: number) {
@@ -18,11 +18,12 @@ export function throttle(func: Function, delay: number) {
 export class throttledLog {
     private throttle: any = undefined;
     constructor(time = 10000) {
-        this.throttle = throttle((message: string) => {
-            systemOutput.debug(message)
+        this.throttle = throttle((...args: any[]) => {
+            SystemOut.info(...args)
         }, time);
     }
-    public log(message: string) {
+    public log(...args: any[]) {
+        const message = args.join(' ');
         this.throttle(message);
     }
 }

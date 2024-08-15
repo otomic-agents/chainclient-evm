@@ -5,7 +5,7 @@ import { watchConfirmIn, watchConfirmOut, watchRefundIn, watchRefundOut, watchRe
 import needle from 'needle'
 import retry from 'async-retry';
 import * as _ from "lodash"
-import { systemOutput } from '../utils/systemOutput'
+import { SystemOut } from '../utils/systemOut'
 import { sha256 } from '../utils/hash'
 import { MonitorManager } from '../monitor/MonitorManager'
 function getFlagHeight(num: number): number {
@@ -27,7 +27,7 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, filteridList
     setInterval(() => {
         for (const [k, v] of blockEventConfirm) {
             if (new Date().getTime() - v.createTime > 1000 * 60 * 10) {
-                systemOutput.warn(`delete ${k}`)
+                SystemOut.warn(`delete ${k}`)
                 blockEventConfirm.delete(k)
             }
         }
@@ -35,14 +35,14 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, filteridList
     const doSend = (height: number) => {
         const STOREKEY = `height_updates_${monitor.evmConfig.system_chain_id}`
         retry(async () => {
-            systemOutput.debug("-->", "send onHeightUpdate", on_height_update_url, height);
+            SystemOut.debug("-->", "send onHeightUpdate", on_height_update_url, height);
             const sendData = {
                 type: 'update_height',
                 height: height,
                 data: blockNumberCache.get(height).data
             }
             if (sendData.data.length > 0) {
-                systemOutput.debug("🐆")
+                SystemOut.debug("🐆")
                 monitor.redis.zadd(STOREKEY, Date.now(), JSON.stringify(sendData));
             }
             await needle('post', on_height_update_url,
@@ -57,8 +57,8 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, filteridList
             minTimeout: 1000, // 1 second
             maxTimeout: Infinity,
             onRetry: (error, attempt) => {
-                systemOutput.debug(`attempt ${attempt}`);
-                systemOutput.error(error)
+                SystemOut.debug(`attempt ${attempt}`);
+                SystemOut.error(error)
             },
         });
     }
@@ -68,7 +68,7 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, filteridList
                 try {
                     await doSend(key)
                 } catch (e) {
-                    systemOutput.error(e)
+                    SystemOut.error(e)
                 } finally {
                     blockNumberCache.delete(key)
                 }
@@ -212,7 +212,7 @@ export default class ApiSupport {
                     code: 30209,
                     message: 'callbackUrl is already registered'
                 }
-                systemOutput.debug('callbackUrl is already registered for support history endpoind', startBlock, endBlock, callbackUrl, merge)
+                SystemOut.debug('callbackUrl is already registered for support history endpoind', startBlock, endBlock, callbackUrl, merge)
                 return
             }
 
@@ -224,7 +224,7 @@ export default class ApiSupport {
             }
 
             cache.set(cacheKey, true)
-            systemOutput.debug('new support history registered', startBlock, endBlock, callbackUrl, merge)
+            SystemOut.debug('new support history registered', startBlock, endBlock, callbackUrl, merge)
         })
 
         router.post(`/support/register`, async (ctx, next) => {
@@ -256,7 +256,7 @@ export default class ApiSupport {
                     code: 30209,
                     message: 'callbackUrl is already registered'
                 }
-                systemOutput.debug("callbackUrl is already registered for support endpoind", callbackUrl, merge)
+                SystemOut.debug("callbackUrl is already registered for support endpoind", callbackUrl, merge)
                 return
             }
             const filteridList: string[] = []
@@ -275,7 +275,7 @@ export default class ApiSupport {
             }
 
             cache.set(cacheKey, true)
-            systemOutput.debug('new support registered', callbackUrl, merge)
+            SystemOut.debug('new support registered', callbackUrl, merge)
         })
 
         router.post(`/support/history_reputation`, async (ctx, next) => {
@@ -325,7 +325,7 @@ export default class ApiSupport {
                     code: 30209,
                     message: 'callbackUrl is already registered'
                 }
-                systemOutput.debug('callbackUrl is already registered for support reputation history endpoind', startBlock, endBlock, callbackUrl, merge)
+                SystemOut.debug('callbackUrl is already registered for support reputation history endpoind', startBlock, endBlock, callbackUrl, merge)
                 return
             }
 
@@ -337,7 +337,7 @@ export default class ApiSupport {
             }
 
             cache.set(cacheKey, true)
-            systemOutput.debug('new support reputation history registered', startBlock, endBlock, callbackUrl, merge)
+            SystemOut.debug('new support reputation history registered', startBlock, endBlock, callbackUrl, merge)
         })
 
         router.post(`/support/register_reputation`, async (ctx, next) => {
@@ -368,7 +368,7 @@ export default class ApiSupport {
                     code: 30209,
                     message: 'callbackUrl is already registered'
                 }
-                systemOutput.debug("callbackUrl is already registered for support reputation endpoind", callbackUrl, merge)
+                SystemOut.debug("callbackUrl is already registered for support reputation endpoind", callbackUrl, merge)
                 return
             }
             const filterIdList: string[] = []
@@ -384,7 +384,7 @@ export default class ApiSupport {
             }
 
             cache.set(cacheKey, true)
-            systemOutput.debug('new support reputation registered', callbackUrl, merge)
+            SystemOut.debug('new support reputation registered', callbackUrl, merge)
         })
     }
     public get linkRouter() {

@@ -18,7 +18,7 @@ import {
   watchTransferIn,
   watchTransferOut,
 } from '../serverUtils/WatcherFactory'
-import { systemOutput } from '../utils/systemOutput'
+import { SystemOut } from '../utils/systemOut'
 import Monitor from '../monitor/Monitor'
 
 const buildTransferIn = async (
@@ -197,7 +197,7 @@ function cacheByFirstParamHashDecorator(): any {
       const paramHash = getObjectHash(firstParam)
 
       if (cacheMap.has(paramHash)) {
-        console.log('Using cached result for hash', paramHash)
+        SystemOut.debug('Using cached result for hash', paramHash)
         return cacheMap.get(paramHash)
       }
 
@@ -215,7 +215,7 @@ export default class ApiForLp {
   @cacheByFirstParamHashDecorator()
   private registerLpnode(requestBody: any, monitor: Monitor, config: any) {
     const lpnode_server_url = requestBody.lpnode_server_url
-    systemOutput.debug(lpnode_server_url)
+    SystemOut.debug(lpnode_server_url)
     if (lpnode_server_url == undefined) {
       return {
         code: 30207,
@@ -240,20 +240,17 @@ export default class ApiForLp {
   }
   linkRouter = (router: Router, config: EvmConfig) => {
     router.post(`/evm-client-${config.system_chain_id}/lpnode/register_lpnode_support_duplication`, async (ctx, next) => {
-      console.log('register_lpnode_support_duplication')
       ctx.response.body = {
         code: 200,
         message: 'true',
       }
     })
     router.post(`/evm-client-${config.system_chain_id}/lpnode/register_lpnode`, async (ctx, next) => {
-      console.log('registerLPNode')
-
       if (this.obridgeIface == undefined) {
         this.obridgeIface = new ethers.utils.Interface(ctx.config.evm_config.abi.obridge)
 
-        systemOutput.info('config:')
-        systemOutput.info(JSON.stringify(ctx.config.evm_config))
+        SystemOut.info('config:')
+        SystemOut.info(JSON.stringify(ctx.config.evm_config))
 
         // systemOutput.info('obridgeIface:')
         // systemOutput.info(JSON.stringify(this.obridgeIface))
@@ -296,7 +293,7 @@ export default class ApiForLp {
           code: 30209,
           message: 'buildTransferIn error',
         }
-        systemOutput.error(e)
+        SystemOut.error(e)
       }
 
       ctx.response.body = {
@@ -378,11 +375,7 @@ export default class ApiForLp {
     router.post(`/evm-client-${config.system_chain_id}/lpnode/sign_message_712`, async (ctx, next) => {
       const signData = (ctx.request.body as any).sign_data
       const walletName = (ctx.request.body as any).wallet_name
-
-      console.log('on sign_message_712')
-      console.log('signData', signData)
-      console.log('walletName', walletName)
-
+      SystemOut.info('on sign_message_712', walletName, signData)
       const signed = await ctx.wallet.signMessage712(signData, walletName)
 
       console.log('signed', signed)

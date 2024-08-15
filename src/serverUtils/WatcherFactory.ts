@@ -2,7 +2,7 @@ import needle from "needle";
 import retry from 'async-retry';
 import Monitor from "../monitor/Monitor";
 import { EvmConfig, FilterInfo } from "../interface/interface";
-import { systemOutput } from "../utils/systemOutput";
+import { SystemOut } from "../utils/systemOut";
 import { UUIDGenerator } from "../utils/comm";
 
 const createCallback = (
@@ -61,8 +61,8 @@ const createCallback = (
     event.event_parse = event.eventParse;
     event.chain_id = config.system_chain_id;
 
-    systemOutput.debug(`[key point] on event callback: type [${type}]`);
-    systemOutput.debug(event);
+    SystemOut.info(`[key point] on event callback: type [${type}]`);
+    SystemOut.info(event);
 
 
     if (merge) {
@@ -71,7 +71,7 @@ const createCallback = (
     }
 
     retry(async () => {
-      systemOutput.debug(`[key point] notify event`, url)
+      SystemOut.info(`[key point] notify event`, url)
       await needle('post', url,
         event,
         {
@@ -84,8 +84,8 @@ const createCallback = (
       minTimeout: 1000, // 1 second
       maxTimeout: Infinity,
       onRetry: (error: any, attempt: any) => {
-        systemOutput.debug(`attempt ${attempt}`);
-        systemOutput.error(error)
+        SystemOut.info(`attempt ${attempt}`);
+        SystemOut.error(error)
       },
     });
   };

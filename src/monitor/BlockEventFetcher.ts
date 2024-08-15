@@ -1,6 +1,6 @@
 import Monitor from "./Monitor";
 import { BlockFetchTask, EvmRpcClient } from "../interface/interface";
-import { systemOutput } from "../utils/systemOutput";
+import { SystemOut } from "../utils/systemOut";
 import * as _ from "lodash";
 const get_events = async (evmRpcClient: EvmRpcClient, from: string, to: string, callback: Function) => {
     evmRpcClient.get().request({ // jsonrpc: "2.0",
@@ -23,7 +23,7 @@ const get_events = async (evmRpcClient: EvmRpcClient, from: string, to: string, 
                 await evmRpcClient.saveBlack();
             }
         } catch (e) {
-            systemOutput.error(e);
+            SystemOut.error(e);
         } finally {
             callback(error, null);
         }
@@ -32,7 +32,7 @@ const get_events = async (evmRpcClient: EvmRpcClient, from: string, to: string, 
 
 const startFetchEvent = (evmRpcClient: EvmRpcClient, blockFetchTaskList: BlockFetchTask[], monitor: Monitor) => {
     const createEventFetcher = () => {
-        console.log("create event fetcher");
+        SystemOut.info("create event fetcher");
         const fetchStatus = {
             lastFetchTime: 0,
             start: 0,
@@ -57,7 +57,7 @@ const startFetchEvent = (evmRpcClient: EvmRpcClient, blockFetchTaskList: BlockFe
             fetchStatus.start = task.block_start
             fetchStatus.end = task.block_end
             task.step = 2;
-            systemOutput.debug("Fetcher task", "start:", task.block_start, "end:", task.block_end);
+            SystemOut.debug("Fetcher task", "start", task.block_start, "end", task.block_end);
 
             await get_events(evmRpcClient, `0x${task.block_start.toString(16)
                 }`, `0x${task.block_end.toString(16)
@@ -71,7 +71,7 @@ const startFetchEvent = (evmRpcClient: EvmRpcClient, blockFetchTaskList: BlockFe
                         // console.log(result)
                         task.event_data = result;
                         if (!result) {
-                            systemOutput.warn("result is null", result);
+                            SystemOut.warn("result is null", result);
                         }
                         task.step = 3;
 
@@ -136,7 +136,7 @@ export default class BlockEventFetcher {
                 dispatch();
             }, 5000);
         };
-        console.log("create dispatcher");
+        SystemOut.info("create dispatcher");
         const dispatch = async () => { // check task number
             this.monitor.onDispatch();
             let task_number = this.getRuningTaskNumber();
@@ -145,7 +145,7 @@ export default class BlockEventFetcher {
                 return;
             }
             // create block object
-            systemOutput.debug("dispatch? ", self.monitor.blockHeight > self.monitor.taskBlockEventNow, self.monitor.blockHeight, self.monitor.taskBlockEventNow);
+            SystemOut.debug("task dispatch ", self.monitor.blockHeight > self.monitor.taskBlockEventNow, self.monitor.blockHeight, self.monitor.taskBlockEventNow);
             while (self.monitor.blockHeight > self.monitor.taskBlockEventNow && task_number < 100) {
                 const block_start = self.monitor.taskBlockEventNow + 1;
                 const block_end: number = self.monitor.blockHeight - self.monitor.taskBlockEventNow > 5 ? self.monitor.taskBlockEventNow + 5 : self.monitor.blockHeight;
@@ -170,14 +170,14 @@ export default class BlockEventFetcher {
     }
 
     private stopDispatch() {
-        
+
     }
     private async monitorLatestHeight() {
         try {
             const height = await this.getAndSetLatestHeight();
-            systemOutput.debug(`Loop update height sucessed, the latest height ${height}`);
+            SystemOut.debug(`Loop update height sucessed`, `${height}`);
         } catch (e) {
-            systemOutput.error("monitorlatestHeight error:", e);
+            SystemOut.error("monitorlatestHeight error:", e);
         } finally {
             setTimeout(() => {
                 this.monitorLatestHeight();
@@ -195,7 +195,7 @@ export default class BlockEventFetcher {
         this.monitor.fetchBlockRunning = true;
         await this.monitorLatestHeight();
         await this.monitorTaskQueue();
-        console.log("startFetch");
+        SystemOut.info("startFetch");
 
         if (this.monitor.taskBlockEventNow == undefined) {
             if (this.monitor.evmConfig == undefined)
@@ -204,7 +204,7 @@ export default class BlockEventFetcher {
 
             this.monitor.taskBlockEventNow = Number(this.monitor.evmConfig.start_block as string);
         }
-        console.log("taskBlockEventNow:", this.monitor.taskBlockEventNow);
+        SystemOut.info("taskBlockEventNow:", this.monitor.taskBlockEventNow);
 
         if (this.monitor.blockFetchTaskList == undefined) {
             this.monitor.blockFetchTaskList = [];
@@ -236,7 +236,7 @@ export default class BlockEventFetcher {
                     }
                     return;
                 }
-                systemOutput.error("get block error:", err);
+                SystemOut.error("get block error:", err);
             }
         );
         if (!_.isFinite(this.monitor.blockHeight)) {
@@ -256,13 +256,13 @@ export default class BlockEventFetcher {
 
         let result;
         try {
-            systemOutput.debug("fetch blockchain height method:eth_blockNumber");
+            SystemOut.debug("fetch blockchain height", "method:eth_blockNumber");
             result = await this.monitor.evmRpcClient.get().request({
                 method: "eth_blockNumber",
                 params: []
             }, 1000 * 8);
         } catch (error) {
-            systemOutput.error(error);
+            SystemOut.error(error);
             callback(error, null);
             return;
         }
@@ -272,7 +272,7 @@ export default class BlockEventFetcher {
             }
             return parseInt(result.slice(2), 16).toString();
         };
-        systemOutput.debug("The latest blockchain height is:", printHeight(result));
+        SystemOut.debug("latest blockchain height", printHeight(result));
         callback(null, result);
     }
 }

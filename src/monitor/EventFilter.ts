@@ -1,9 +1,9 @@
 import Web3EthAbi from "web3-eth-abi";
 import Monitor from "./Monitor";
 import { DispatcherDataHolder, FilterInfo } from "../interface/interface";
-import { systemOutput } from "../utils/systemOutput";
+import { SystemOut } from "../utils/systemOut";
 import { throttledLog } from "../utils/comm";
-const EVENT_PROCESS_LOG = new throttledLog();
+const EVENT_PROCESS_LOG = new throttledLog(1000 * 60);
 import * as async from "async";
 function sleepms(time: number) {
   return new Promise((resolve) => {
@@ -56,7 +56,7 @@ export default class EventFilter {
         this.monitor.onFilter()
       }
       const blockFetchTaskList = dispatcherDataHolder.event_list;
-      EVENT_PROCESS_LOG.log("checkEvent still running");
+      EVENT_PROCESS_LOG.log("CheckEvent still running", new Date().toISOString().replace(/T/, ' ').substring(0, 19));
       try {
         while (blockFetchTaskList[0]?.step == 3) {
           const task = blockFetchTaskList.shift();
@@ -134,17 +134,17 @@ export default class EventFilter {
               );
             });
             if (downloadTasks.length > 0) {
-              systemOutput.debug(
+              SystemOut.debug(
                 `down load event data: ${task.block_start},${task.block_end}`
               );
               try {
                 await Promise.all(downloadTasks);
               } catch (error) {
-                systemOutput.error(
+                SystemOut.error(
                   "An error occurred while processing the promises:",
                   error
                 );
-                systemOutput.warn(
+                SystemOut.warn(
                   `retry process ${task.block_start}-${task.block_end}`
                 );
                 blockFetchTaskList.unshift(task);
@@ -155,9 +155,9 @@ export default class EventFilter {
             events.forEach((log: any) => {
               const tx = dataMap.get(log.transactionHash).tx;
               const respBlock = dataMap.get(log.transactionHash).block;
-              systemOutput.debug("Time line");
-              console.log("<--------- tx");
-              console.log(tx);
+              SystemOut.debug("Time line");
+              SystemOut.info("<--------- tx");
+              SystemOut.info(tx);
 
               const eventParse = Web3EthAbi.decodeLog(
                 filter_info.event_data.inputs,
@@ -175,7 +175,7 @@ export default class EventFilter {
 
             (async () => {
               if (task.event_data.length <= 0) {
-                systemOutput.warn("can't update height ,event data is empty....");
+                SystemOut.warn("can't update height ,event data is empty....");
                 taskDone(true);
                 return;
               }
@@ -186,7 +186,7 @@ export default class EventFilter {
                   filter_info.filter_id
                 );
               } catch (error) {
-                systemOutput.error(
+                SystemOut.error(
                   "update_height error:",
                   error,
                   task.event_data
@@ -200,14 +200,14 @@ export default class EventFilter {
           })
         }
       } catch (e) {
-        systemOutput.error(e);
+        SystemOut.error(e);
       }
     };
     let stop = false;
     for (; ;) {
       if (stop) {
         setInterval(() => {
-          systemOutput.debug("filter loop is stoped .");
+          SystemOut.debug("filter loop is stoped .");
         }, 1000 * 10);
         break;
       }
@@ -216,7 +216,7 @@ export default class EventFilter {
           stop = true;
         });
       } catch (e) {
-        systemOutput.error("process event error:", e);
+        SystemOut.error("process event error:", e);
       } finally {
         await sleepms(1000 * 3);
       }

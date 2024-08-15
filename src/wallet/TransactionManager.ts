@@ -13,7 +13,7 @@ import {
 import { Redis } from "ioredis";
 import { AccessListish } from "ethers/lib/utils";
 import BN from "bignumber.js";
-import { systemOutput } from "../utils/systemOutput";
+import { SystemOut } from "../utils/systemOut";
 import * as _ from "lodash";
 import { throttledLog } from "../utils/comm";
 const { dev, vault } = Config;
@@ -138,7 +138,7 @@ class TransactionCheckLoop {
   }
   private statusReport() {
     if (this.errorMessage.length > 0) {
-      systemOutput.warn("transaction execute faild info:");
+      SystemOut.warn("transaction execute faild info:");
       console.table(this.errorMessage);
     }
     setTimeout(() => {
@@ -314,11 +314,11 @@ class TransactionCheckLoop {
     lfirst: TransactionRequestCC,
     lfirstData: TransactionRequestCC
   ) {
-    systemOutput.debug("send new transaction");
+    SystemOut.debug("send new transaction");
     //get gas_price
     const gas_price = await this.paddingListHolder.getDynamicGasPrice();
     if (gas_price == "-2") {
-      systemOutput.error("Gas is too high, refusing transaction.");
+      SystemOut.error("Gas is too high, refusing transaction.");
       return;
     }
     if (gas_price == "-1") {
@@ -338,7 +338,7 @@ class TransactionCheckLoop {
                 );
                 callback(null);
               } catch (e) {
-                systemOutput.error(e);
+                SystemOut.error(e);
                 callback(
                   new SendTransactionError(
                     0,
@@ -437,7 +437,7 @@ class TransactionCheckLoop {
                   client = (client as ethers.Wallet).connect(provider);
                   transactionSended = await client.sendTransaction(lfirst);
                 }
-                systemOutput.debug("transactionSended:", transactionSended);
+                SystemOut.debug("transactionSended:", transactionSended);
 
                 lfirstData.transactionHash = transactionSended.hash;
                 lfirstData.sended = transactionSended;
@@ -458,11 +458,11 @@ class TransactionCheckLoop {
         (err) => {
           resolve(true);
           if (!err) {
-            systemOutput.debug("transaction send sucess");
+            SystemOut.debug("transaction send sucess");
             return;
           }
-          systemOutput.debug("🚨");
-          systemOutput.error(err);
+          SystemOut.debug("🚨");
+          SystemOut.error(err);
           SystemBus.emit("🚨", err);
           console.log("this.failNum:", this.failNum);
           this.failNum++;
@@ -495,9 +495,7 @@ class TransactionCheckLoop {
                 const transactionReceipt = await provider.getTransactionReceipt(
                   lfirst.transactionHash
                 ); //
-                systemOutput.debug("transactionReceipt:");
-                systemOutput.debug(transactionReceipt);
-
+                SystemOut.info("transactionReceipt:", transactionReceipt);
                 if (
                   transactionReceipt != undefined &&
                   transactionReceipt != null
@@ -514,7 +512,7 @@ class TransactionCheckLoop {
                 }
               } catch (e) {
                 this.pushErrorMessage(`transaction execution failed`);
-                systemOutput.error(
+                SystemOut.error(
                   `get [${lfirst.transactionHash}] transactionReceipt error:`,
                   e
                 );
@@ -536,11 +534,11 @@ class TransactionCheckLoop {
               lfirstData.error = `get receipt timeout`;
               this.paddingListHolder.onTransactionFailed(lfirstData);
               // systemOutput.debug(lfirstData)
-              systemOutput.error("receipt get faild");
+              SystemOut.error("receipt get faild");
             }
             return;
           }
-          systemOutput.debug("Receipt data:");
+          SystemOut.debug("Receipt data:");
           console.log(lfirstData.transactionReceipt);
         }
       );
@@ -552,7 +550,7 @@ class TransactionCheckLoop {
     if (lfirstDataString == undefined) {
       setTimeout(() => {
         LOOP_STATUS_LOG.log(
-          `Transaction Loop still running ${new Date().getTime()}`
+          `Transaction Loop still running`, `${new Date().toISOString().replace(/T/, ' ').substring(0, 23)}`
         );
         this.check();
       }, 3000);
@@ -566,8 +564,8 @@ class TransactionCheckLoop {
     //dev test
     // lfirst.transactionHash = "0xb5e12372396142bc6d02a60e66607060cf8e455ee339c6b4e67a7d2c66cb6227"
 
-    systemOutput.debug("lfirst:");
-    systemOutput.debug(lfirst);
+    SystemOut.debug("lfirst:");
+    SystemOut.debug(lfirst);
 
     lfirst.chainId =
       typeof lfirst.chainId === "string"
@@ -658,26 +656,26 @@ export default class TransactionManager {
     const maxGasPrice = getMaxGasPrice(this.evmConfig);
     const rpcGas = this.rpcGas;
     if (maxGasPrice == "-1") {
-      systemOutput.warn("No maximum gas set, using def value.");
+      SystemOut.warn("No maximum gas set, using def value.");
       useDefaultGas = true;
     }
     try {
       if (new BN(rpcGas).toString() == "NaN") {
-        systemOutput.warn("Processing gas error, using default value.");
+        SystemOut.warn("Processing gas error, using default value.");
         useDefaultGas = true;
       } else if (new BN(rpcGas).comparedTo(new BN(maxGasPrice)) > 0) {
-        systemOutput.warn("Gas is too high, no longer trading.");
+        SystemOut.warn("Gas is too high, no longer trading.");
         useDefaultGas = true;
         stopTrade = true;
       }
     } catch (e) {
       useDefaultGas = true;
-      systemOutput.warn("Processing gas error, using default value.");
+      SystemOut.warn("Processing gas error, using default value.");
     }
 
     let gasPrice;
     if (stopTrade == true) {
-      systemOutput.warn("🚨🚨 stop trade ");
+      SystemOut.warn("🚨🚨 stop trade ");
       gasPrice = "-2";
       return;
     }
@@ -687,10 +685,10 @@ export default class TransactionManager {
       gasPrice = rpcGas;
     }
     if (gasPrice == "-1") {
-      systemOutput.warn("🚨🚨 default gas not set ,use auto gas ");
+      SystemOut.warn("🚨🚨 default gas not set ,use auto gas ");
       return;
     }
-    systemOutput.debug(
+    SystemOut.debug(
       `tx gas is:`,
       gasPrice,
       `${ethers.utils.formatUnits(gasPrice, "gwei")}Gwei`
@@ -709,10 +707,10 @@ export default class TransactionManager {
         const tenPercent = sourcePrice.div(new BN(10));
         const increasedByTenPercent = sourcePrice.plus(tenPercent);
         this.rpcGas = increasedByTenPercent.toFixed(0).toString(); // "100000000000000000000000000";
-        systemOutput.debug(`🚛 [dotnet:${this.dotnetEnable}] rpcGas set  :`, this.rpcGas);
+        SystemOut.debug(`rpcGas set`, `[dotnet:${this.dotnetEnable}]:`, this.rpcGas);
       }
     } catch (e) {
-      systemOutput.error(e);
+      SystemOut.error(e);
     }
   }
   private async keepDynamicGasPrice() {
@@ -732,7 +730,7 @@ export default class TransactionManager {
       this.getDynamicGasPriceFunctionResult = gasResult;
       this.updateDynamicGasPrice();
     } catch (e) {
-      systemOutput.error("get Gas error:", e);
+      SystemOut.error("get Gas error:", e);
     }
     setTimeout(() => {
       this.keepDynamicGasPrice();
