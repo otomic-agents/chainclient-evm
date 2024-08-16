@@ -5,7 +5,7 @@ const timezone = require("dayjs/plugin/timezone");
 const dayjs = require("dayjs");
 dayjs.extend(utc);
 dayjs.extend(timezone);
-
+import copy from 'fast-copy';
 const log: Logger<ILogObj> = new Logger({ prettyLogTimeZone: "UTC" });
 log.settings.minLevel = parseInt(_.get(process, "env.LOG_LEVEL", "3"))
 import { timeout } from "async";
@@ -17,14 +17,38 @@ const headers = {
   'Accept': '*/*',
 };
 
-
+function logObjectComplexity(obj: any, depth = 0, width = 0) {
+  if (typeof obj !== 'object' || obj === null) {
+    return;
+  }
+  depth++;
+  if (Array.isArray(obj)) {
+    width += obj.length;
+  } else {
+    for (let key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        logObjectComplexity(obj[key], depth, width);
+      }
+    }
+  }
+  if (depth > 5 || width > 100) {
+    console.log(`The object is complex. Depth: ${depth}, Width: ${width}.`);
+    return false
+  }
+  return true
+}
 log.attachTransport((logObj) => {
+  const canSendLog = logObjectComplexity(logObj)
+  if (!canSendLog) {
+    return;
+  }
+  const cloneObj = copy(logObj)
   if (process.env["LOG_DEBUG"] == "true") {
     const baseLogItem = {
       "timestamp": new Date().getTime(),
       // "viewtime": new Date(new Date().getTime()).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" }),
     }
-    Object.assign(baseLogItem, logObj)
+    Object.assign(baseLogItem, cloneObj)
     const logsData = [
       {
         "common": {
@@ -44,14 +68,14 @@ log.attachTransport((logObj) => {
       {
         headers,
         maxContentLength: Infinity,
-        timeout: 1500
+        timeout: 2500
       }
     )
       .then((response: any) => {
         // console.log('Response from server:', response.data);
       })
       .catch((error: any) => {
-        console.error('Error submitting data:', error);
+        console.error('Error submitting data:', error.toString());
       });
   }
 });

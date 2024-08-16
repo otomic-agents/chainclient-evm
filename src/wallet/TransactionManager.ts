@@ -1,4 +1,5 @@
 import { BigNumber, BigNumberish, BytesLike, ethers } from "ethers";
+import to from 'await-to-js';
 import needle from "needle";
 import bcrypt from "bcrypt";
 import Wallet from "./Wallet";
@@ -601,8 +602,8 @@ export default class TransactionManager {
 
   private initDotnet() {
     this.dotnetEnable = true;
-    console.log(path.join(baseNetAppPath, "Newtonsoft.Json.dll"));
-    const getDynamicGasPriceFunction = edge.func({
+    SystemOut.info(path.join(baseNetAppPath, "Newtonsoft.Json.dll"));
+    this.getDynamicGasPriceFunction = edge.func({
       source: fs.readFileSync(
         path.join(__dirname, "../../", "dotnet/StartUp/Libarary.cs"),
         { encoding: "utf-8" }
@@ -622,7 +623,6 @@ export default class TransactionManager {
         "System.Net.Primitives.dll",
       ],
     });
-    this.getDynamicGasPriceFunction = getDynamicGasPriceFunction;
   }
   private initLocalGasPrice() {
     this.getDynamicGasPriceFunction = async (input: any, callback: any) => {
@@ -632,21 +632,23 @@ export default class TransactionManager {
         params: [],
         id: 1,
       };
-      try {
-        console.log("request ", input.rpcUrl);
-        const response = await axios.post(input.rpcUrl, requestObject, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        if (!response || !response.data) {
-          throw new Error("Invalid response received.");
-        }
-        // console.log(_.get(response, "data", ""));
-        callback(null, JSON.stringify(_.get(response, "data", "{}")));
-      } catch (e) {
-        callback(e, null);
+
+      SystemOut.info("request ", input.rpcUrl, "method", "eth_gasPrice");
+      const [err, response] = await to(axios.post(input.rpcUrl, requestObject, {
+        timeout: 3000,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }));
+      if (err) {
+        callback(new Error(`get gasPriceError ${err.toString()}`), null);
+        return
       }
+      if (!response || !response.data) {
+        callback(new Error("Invalid response received."), null)
+        return
+      }
+      callback(null, JSON.stringify(_.get(response, "data", "{}")));
     };
   }
   public async getDynamicGasPrice() {
@@ -714,27 +716,31 @@ export default class TransactionManager {
     }
   }
   private async keepDynamicGasPrice() {
-    try {
-      const gasResult: string = await new Promise((resolve, reject) => {
-        this.getDynamicGasPriceFunction(
-          { rpcUrl: this.evmConfig.rpc_url },
-          (err: Error, result: any) => {
-            if (err) {
-              reject(err);
-              return;
-            }
-            resolve(result);
-          }
-        );
-      });
-      this.getDynamicGasPriceFunctionResult = gasResult;
-      this.updateDynamicGasPrice();
-    } catch (e) {
-      SystemOut.error("get Gas error:", e);
+    const next = () => {
+      setTimeout(() => {
+        this.keepDynamicGasPrice();
+      }, 1000 * 10);
     }
-    setTimeout(() => {
-      this.keepDynamicGasPrice();
-    }, 1000 * 10);
+    const [err, gasResult]: [Error, string] = await to(new Promise((resolve, reject) => {
+      this.getDynamicGasPriceFunction(
+        { rpcUrl: this.evmConfig.rpc_url, method: "getGasPrice" },
+        (err: Error, result: string) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(result);
+        }
+      );
+    }));
+    if (err) {
+      SystemOut.error("get Gas error:", err);
+      next();
+      return;
+    }
+    this.getDynamicGasPriceFunctionResult = gasResult;
+    this.updateDynamicGasPrice();
+    next();
   }
   setConfig = async (
     redis: Redis,

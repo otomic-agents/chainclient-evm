@@ -56,7 +56,7 @@ export class HttpRpcClient {
             if (axios.isAxiosError(error)) {
                 throw new Error(`Request failed with status ${error.response?.status}: ${error.message}`);
             }
-            throw error;
+            throw new Error(`http rpc request error${error.toString()}`);
         }
     }
 

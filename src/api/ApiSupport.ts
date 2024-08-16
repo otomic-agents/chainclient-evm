@@ -35,7 +35,7 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, filteridList
     const doSend = (height: number) => {
         const STOREKEY = `height_updates_${monitor.evmConfig.system_chain_id}`
         retry(async () => {
-            SystemOut.debug("-->", "send onHeightUpdate", on_height_update_url, height);
+            SystemOut.info("-->", "send onHeightUpdate", on_height_update_url, height);
             const sendData = {
                 type: 'update_height',
                 height: height,

@@ -18,6 +18,9 @@
     <Reference Include="EdgeJs">
       <HintPath>..\..\node_modules\edge-js\lib\bootstrap\bin\Release\EdgeJs.dll</HintPath>
     </Reference>
+        <Reference Include="Newtonsoft.Json">
+      <HintPath>.\bin\Debug\net7.0\Newtonsoft.Json</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

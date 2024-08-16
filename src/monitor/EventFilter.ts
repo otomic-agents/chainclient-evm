@@ -60,7 +60,7 @@ export default class EventFilter {
       try {
         while (blockFetchTaskList[0]?.step == 3) {
           const task = blockFetchTaskList.shift();
-          await new Promise(async (taskDone) => {
+          await new Promise(async (taskDone: Function) => {
             if (task == undefined) {
               throw new Error("dispatcher error: blockFetchTaskList[0] gone");
             }
@@ -68,9 +68,6 @@ export default class EventFilter {
             const events = task.event_data.filter((event: any) => {
               return event.topics[0] == filter_info.topic_string;
             });
-            // console.log(task)
-            // console.log('hit events')
-            // console.log(events)
 
             let finishedEvent = 0;
             const dataMap: Map<string, { tx: any; block: any }> = new Map();
@@ -173,12 +170,7 @@ export default class EventFilter {
               });
             });
 
-            (async () => {
-              if (task.event_data.length <= 0) {
-                SystemOut.warn("can't update height ,event data is empty....");
-                taskDone(true);
-                return;
-              }
+            (async (task) => {
               try {
                 // systemOutput.debug("🐸", task.event_data[task.event_data.length - 1].blockNumber)
                 await self.monitor.update_height(
@@ -196,7 +188,7 @@ export default class EventFilter {
                 taskDone(true)
                 return;
               }
-            })();
+            })(task);
           })
         }
       } catch (e) {

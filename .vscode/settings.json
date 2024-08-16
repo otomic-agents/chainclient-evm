@@ -1,13 +1,12 @@
 {
   "editor.tabSize": 2,
   "editor.fontSize": 15,
-  "editor.lineHeight": 23,
+  "editor.lineHeight": 25,
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.formatOnType": true,
   "breadcrumbs.enabled": true,
   "editor.renderControlCharacters": true,
-  "eslint.codeActionsOnSave.mode": "problems",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
