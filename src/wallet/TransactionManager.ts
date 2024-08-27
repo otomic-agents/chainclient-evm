@@ -612,7 +612,7 @@ export default class TransactionManager {
         path.join(baseNetAppPath, "Newtonsoft.Json.dll"),
         path.join(
           __dirname,
-          "../../node_modules/edge-js/lib/bootstrap/bin/Release/EdgeJs.dll"
+          "../../dotnet/StartUp/bin/Debug/net7.0/EdgeJs.dll"
         ),
         "System",
         "System.dll",

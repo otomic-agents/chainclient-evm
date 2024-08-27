@@ -149,12 +149,20 @@ const buildTransferRefund = async (
   const wallet_address = await ctx.wallet.getAddress(
     command_transfer_refund.sender_wallet_name
   );
+  let token = ethers.BigNumber.from(command_transfer_refund.token).toHexString(); // address
+  let targetIsNativeToken = false;
+  if (
+    ethers.BigNumber.from(command_transfer_refund.token).toHexString() == "0x00"
+  ) {
+    token = AddressZero;
+    targetIsNativeToken = true;
+  }
   const calldata = obridgeIface.encodeFunctionData("refundTransferIn", [
     wallet_address, // address _sender,
     ethers.BigNumber.from(
       command_transfer_refund.user_receiver_address
     ).toHexString(), // address _receiver,
-    ethers.BigNumber.from(command_transfer_refund.token).toHexString(), // address _token,
+    token, // address _token,
     command_transfer_refund.token_amount, // uint256 _token_amount,
     command_transfer_refund.eth_amount, // uint256 _eth_amount,
     ethers.utils.arrayify(command_transfer_refund.hash_lock), // bytes32 _hashlock,
