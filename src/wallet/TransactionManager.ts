@@ -464,7 +464,7 @@ class TransactionCheckLoop {
           }
           SystemOut.debug("🚨");
           SystemOut.error(err);
-          SystemBus.emit("🚨", err);
+          SystemBus.emittery.emit("🚨", err);
           console.log("this.failNum:", this.failNum);
           this.failNum++;
           if (this.failNum >= 5) {

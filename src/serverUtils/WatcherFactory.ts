@@ -4,6 +4,8 @@ import Monitor from "../monitor/Monitor";
 import { EvmConfig, FilterInfo } from "../interface/interface";
 import { SystemOut } from "../utils/systemOut";
 import { UUIDGenerator } from "../utils/comm";
+import { SystemBus } from "../bus/bus";
+import _ from "lodash";
 
 const createCallback = (
   url: string,
@@ -63,7 +65,7 @@ const createCallback = (
 
     SystemOut.info(`[key point] on event callback: type [${type}]`);
     SystemOut.info(event);
-
+    SystemBus.sendAction({ action: "chain_event", payload: _.clone(event) })
 
     if (merge) {
       mergeData(event);

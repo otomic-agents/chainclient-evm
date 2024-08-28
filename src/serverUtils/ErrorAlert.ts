@@ -9,10 +9,10 @@ export default class ErrorAlert {
         this.listenEvent()
     }
     private listenEvent() {
-        SystemBus.on("🚨", (message: Error) => {
+        SystemBus.emittery.on("🚨", (message: Error) => {
             this.pushMessage(message.toString())
         })
-        SystemBus.on("runError", (message: Error) => {
+        SystemBus.emittery.on("runError", (message: Error) => {
             this.pushMessage(message.toString())
         })
     }
