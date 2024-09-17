@@ -3,10 +3,11 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using System.Threading;
-public class Lib
+
+public class Startup
 {
   private static int _requestId = 1;
-  public async Task<string> getGasPrice(dynamic input)
+  public async Task<object> Invoke(dynamic input)
   {
     string rpcUrl = input.rpcUrl;
     Interlocked.Increment(ref _requestId);
@@ -26,27 +27,12 @@ public class Lib
         );
 
     var content = new StringContent(requestObject.ToString(), System.Text.Encoding.UTF8, "application/json");
-    HttpResponseMessage response = httpClient.PostAsync(rpcUrl, content).Result;
+    HttpResponseMessage response = await  httpClient.PostAsync(rpcUrl, content);
     if (!response.IsSuccessStatusCode)
     {
       throw new Exception($"Failed to fetch gas price: {response.StatusCode}");
     }
-    var responseString = response.Content.ReadAsStringAsync().Result;
+    var responseString = await  response.Content.ReadAsStringAsync();
     return responseString;
-  }
-}
-public class Startup
-{
-  Lib lib = new Lib();
-  public async Task<object> Invoke(dynamic input)
-  {
-    return await Task.Run(async () =>
-    {
-      if (input.method == "getGasPrice")
-      {
-        return await this.lib.getGasPrice(input);
-      }
-      throw new Exception($"method not found..{input.method}");
-    });
   }
 }

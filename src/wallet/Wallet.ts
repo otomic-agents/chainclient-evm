@@ -98,8 +98,10 @@ export default class Wallet {
     this.walletSecrets = walletSecrets
   }
 
-  getWalletInfo = async () => {
-    await this.syncBalance()
+  getWalletInfo = async (onlyGet = false) => {
+    if (onlyGet == false) {
+      await this.syncBalance()
+    }
     return this.wallet_info
   }
 

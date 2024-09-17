@@ -439,7 +439,7 @@ class TransactionCheckLoop {
                   transactionSended = await client.sendTransaction(lfirst);
                 }
                 SystemOut.debug("transactionSended:", transactionSended);
-
+                SystemBus.sendAction({ action: "transaction_send", payload: _.clone(transactionSended) })
                 lfirstData.transactionHash = transactionSended.hash;
                 lfirstData.sended = transactionSended;
                 await this.paddingListHolder.updateTransactionNow(lfirstData);
@@ -469,6 +469,7 @@ class TransactionCheckLoop {
           this.failNum++;
           if (this.failNum >= 5) {
             lfirstData.error = err;
+            SystemBus.sendAction({ action: "transaction_send_failed", payload: _.clone(lfirstData) })
             this.paddingListHolder.onTransactionFailed(lfirstData);
             this.failNum = 0;
           }
@@ -533,6 +534,7 @@ class TransactionCheckLoop {
               MAX_GET_TRANSACTION_RECEIPT_NUMBER
             ) {
               lfirstData.error = `get receipt timeout`;
+              SystemBus.sendAction({ action: "transaction_send_failed", payload: _.clone(lfirstData) })
               this.paddingListHolder.onTransactionFailed(lfirstData);
               // systemOutput.debug(lfirstData)
               SystemOut.error("receipt get faild");
@@ -706,9 +708,8 @@ export default class TransactionManager {
         _.get(rpcResponse, "result", null) != null
       ) {
         const sourcePrice = new BN(_.get(rpcResponse, "result", ""), 16);
-        const tenPercent = sourcePrice.div(new BN(10));
-        const increasedByTenPercent = sourcePrice.plus(tenPercent);
-        this.rpcGas = increasedByTenPercent.toFixed(0).toString(); // "100000000000000000000000000";
+        const increasedByTwentyPercent = sourcePrice.times(new BN(12)).div(new BN(10)); // * 1.2
+        this.rpcGas = increasedByTwentyPercent.toFixed(0).toString(); // "100000000000000000000000000";
         SystemOut.debug(`rpcGas set`, `[dotnet:${this.dotnetEnable}]:`, this.rpcGas);
       }
     } catch (e) {
@@ -719,16 +720,18 @@ export default class TransactionManager {
     const next = () => {
       setTimeout(() => {
         this.keepDynamicGasPrice();
-      }, 1000 * 10);
+      }, 1000 * 20);
     }
     const [err, gasResult]: [Error, string] = await to(new Promise((resolve, reject) => {
+      const callData = { rpcUrl: this.evmConfig.rpc_url, method: "getGasPrice" }
       this.getDynamicGasPriceFunction(
-        { rpcUrl: this.evmConfig.rpc_url, method: "getGasPrice" },
+        JSON.parse(JSON.stringify(callData)),
         (err: Error, result: string) => {
           if (err) {
             reject(err);
             return;
           }
+          console.log(result)
           resolve(result);
         }
       );

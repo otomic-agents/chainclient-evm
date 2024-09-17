@@ -20,6 +20,8 @@ import {
 } from "../serverUtils/WatcherFactory";
 import { SystemOut } from "../utils/systemOut";
 import Monitor from "../monitor/Monitor";
+import { SystemBus } from "../bus/bus";
+import _ from "lodash";
 const AddressZero = "0x0000000000000000000000000000000000000000";
 const buildTransferIn = async (
   ctx: KoaCtx,
@@ -360,6 +362,7 @@ export default class ApiForLp {
     router.post(
       `/evm-client-${config.system_chain_id}/lpnode/transfer_in`,
       async (ctx, next) => {
+        SystemBus.sendAction({ action: "new_transaction_request", payload: _.clone(ctx.request.body) })
         const transaction_type = (ctx.request.body as any).transaction_type;
         const command_transfer_in = (ctx.request.body as any)
           .command_transfer_in;
