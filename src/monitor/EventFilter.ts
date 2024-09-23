@@ -15,7 +15,7 @@ function sleepms(time: number) {
 export default class EventFilter {
   monitor: Monitor;
   dispatcherEventList: DispatcherDataHolder[];
-
+  filterCount: number = 0;
   constructor(_monitor: Monitor) {
     this.monitor = _monitor;
     this.dispatcherEventList = [];
@@ -38,9 +38,13 @@ export default class EventFilter {
       }
     };
     setInterval(dispatcher, 3000);
+    setInterval(() => {
+      SystemOut.info("🐽Current number of filters:", this.filterCount);
+    }, 5000);
   }
 
   startFilter = async (filter_info: FilterInfo, callback: Function) => {
+    this.filterCount++;
     const dispatcherDataHolder: DispatcherDataHolder = {
       filter_info,
       event_list: [],
@@ -48,15 +52,16 @@ export default class EventFilter {
     this.dispatcherEventList.push(dispatcherDataHolder);
 
     const self = this;
-    const status = {
-
-    }
+    const status = {};
     const checkEvent = async (stop: Function) => {
       if (typeof this.monitor.onFilter() == "function") {
-        this.monitor.onFilter()
+        this.monitor.onFilter();
       }
       const blockFetchTaskList = dispatcherDataHolder.event_list;
-      EVENT_PROCESS_LOG.log("CheckEvent still running", new Date().toISOString().replace(/T/, ' ').substring(0, 19));
+      EVENT_PROCESS_LOG.log(
+        "CheckEvent still running",
+        new Date().toISOString().replace(/T/, " ").substring(0, 19)
+      );
       try {
         while (blockFetchTaskList[0]?.step == 3) {
           const task = blockFetchTaskList.shift();
@@ -78,7 +83,10 @@ export default class EventFilter {
             events.forEach((log: any) => {
               downloadTasks.push(
                 new Promise((resolve, reject) => {
-                  const downloadResult: { tx: any, block: any } = { tx: null, block: null };
+                  const downloadResult: { tx: any; block: any } = {
+                    tx: null,
+                    block: null,
+                  };
                   async.series(
                     [
                       function getTransactionReceipt(cb) {
@@ -146,13 +154,15 @@ export default class EventFilter {
                 );
                 blockFetchTaskList.unshift(task);
                 taskDone(true);
-                return
+                return;
               }
+            } else {
+              SystemOut.info("downLoad task count", downloadTasks.length);
             }
             events.forEach((log: any) => {
               const tx = dataMap.get(log.transactionHash).tx;
               const respBlock = dataMap.get(log.transactionHash).block;
-              SystemOut.debug("Time line");
+              SystemOut.info("Time line");
               SystemOut.info("<--------- tx");
               SystemOut.info(tx);
 
@@ -172,31 +182,26 @@ export default class EventFilter {
 
             (async (task) => {
               try {
-                // systemOutput.debug("🐸", task.event_data[task.event_data.length - 1].blockNumber)
+                SystemOut.debug("🐸", task.block_end, events.length);
                 await self.monitor.update_height(
                   task.block_end,
                   filter_info.filter_id
                 );
               } catch (error) {
-                SystemOut.error(
-                  "update_height error:",
-                  error,
-                  task.event_data
-                );
-              }
-              finally {
-                taskDone(true)
+                SystemOut.error("update_height error:", error, task.event_data);
+              } finally {
+                taskDone(true);
                 return;
               }
             })(task);
-          })
+          });
         }
       } catch (e) {
         SystemOut.error(e);
       }
     };
     let stop = false;
-    for (; ;) {
+    for (;;) {
       if (stop) {
         setInterval(() => {
           SystemOut.debug("filter loop is stoped .");
