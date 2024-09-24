@@ -89,10 +89,11 @@ export default {
         status_key    : process.env.STATUS_KEY
     },
     relay_server_url : {
-        on_transfer_out : process.env.SERVER_URL_TRANSFER_OUT,
-        on_transfer_in  : process.env.SERVER_URL_TRANSFER_IN,
-        on_confirm      : process.env.SERVER_URL_CONFIRM,
-        on_refunded     : process.env.SERVER_URL_REFUNDED
+        on_transfer_out: process.env.SERVER_URL_TRANSFER_OUT,
+        on_transfer_in: process.env.SERVER_URL_TRANSFER_IN,
+        on_confirm: process.env.SERVER_URL_CONFIRM,
+        on_confirm_in: process.env.SERVER_URL_CONFIRM_IN,
+        on_refunded: process.env.SERVER_URL_REFUNDED
     },
     dev : {
         dev: process.env.DEV_ENABLE == 'true',

@@ -1,24 +1,33 @@
 import Web3EthAbi from "web3-eth-abi";
 import Monitor from "./Monitor";
 import { DispatcherDataHolder, FilterInfo } from "../interface/interface";
-import sleep from "../serverUtils/Sleeper";
-
+import { SystemOut } from "../utils/systemOut";
+import { throttledLog } from "../utils/comm";
+const EVENT_PROCESS_LOG = new throttledLog(1000 * 60);
+import * as async from "async";
+function sleepms(time: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(true);
+    }, time);
+  });
+}
 export default class EventFilter {
   monitor: Monitor;
   dispatcherEventList: DispatcherDataHolder[];
-
+  filterCount: number = 0;
   constructor(_monitor: Monitor) {
     this.monitor = _monitor;
     this.dispatcherEventList = [];
 
-    let self = this;
+    const self = this;
     const dispatcher = async () => {
       if (self.monitor.blockFetchTaskList == undefined)
         throw new Error("blockFetchTaskList undefined");
 
-      let blockFetchTaskList = self.monitor.blockFetchTaskList;
+      const blockFetchTaskList = self.monitor.blockFetchTaskList;
       while (blockFetchTaskList[0]?.step == 3) {
-        let task = blockFetchTaskList.shift();
+        const task = blockFetchTaskList.shift();
 
         self.dispatcherEventList.forEach((obj) => {
           if (task == undefined) {
@@ -29,113 +38,185 @@ export default class EventFilter {
       }
     };
     setInterval(dispatcher, 3000);
+    setInterval(() => {
+      SystemOut.info("🐽Current number of filters:", this.filterCount);
+    }, 5000);
   }
 
   startFilter = async (filter_info: FilterInfo, callback: Function) => {
+    this.filterCount++;
     const dispatcherDataHolder: DispatcherDataHolder = {
       filter_info,
       event_list: [],
     };
     this.dispatcherEventList.push(dispatcherDataHolder);
 
-    let self = this;
-    let checkEvent = async () => {
-      let blockFetchTaskList = dispatcherDataHolder.event_list;
-      while (blockFetchTaskList[0]?.step == 3) {
-        let task = blockFetchTaskList.shift();
+    const self = this;
+    const status = {};
+    const checkEvent = async (stop: Function) => {
+      if (typeof this.monitor.onFilter() == "function") {
+        this.monitor.onFilter();
+      }
+      const blockFetchTaskList = dispatcherDataHolder.event_list;
+      EVENT_PROCESS_LOG.log(
+        "CheckEvent still running",
+        new Date().toISOString().replace(/T/, " ").substring(0, 19)
+      );
+      try {
+        while (blockFetchTaskList[0]?.step == 3) {
+          const task = blockFetchTaskList.shift();
+          await new Promise(async (taskDone: Function) => {
+            if (task == undefined) {
+              throw new Error("dispatcher error: blockFetchTaskList[0] gone");
+            }
+            this.monitor.onFilterData(task.event_data);
+            const events = task.event_data.filter((event: any) => {
+              return event.topics[0] == filter_info.topic_string;
+            });
 
-        if (task == undefined) {
-          throw new Error("dispatcher error: blockFetchTaskList[0] gone");
-        }
+            let finishedEvent = 0;
+            const dataMap: Map<string, { tx: any; block: any }> = new Map();
+            const downloadTasks: any[] = [];
+            if (self.monitor.evmRpcClient == undefined) {
+              throw new Error("evmRpcClient not found");
+            }
+            events.forEach((log: any) => {
+              downloadTasks.push(
+                new Promise((resolve, reject) => {
+                  const downloadResult: { tx: any; block: any } = {
+                    tx: null,
+                    block: null,
+                  };
+                  async.series(
+                    [
+                      function getTransactionReceipt(cb) {
+                        self.monitor.evmRpcClient
+                          .get()
+                          .request({
+                            method: "eth_getTransactionReceipt",
+                            params: [log.transactionHash],
+                          })
+                          .then((tx) => {
+                            downloadResult.tx = tx;
+                            cb(null, tx);
+                          })
+                          .catch((e) => {
+                            cb(e, null);
+                          });
+                      },
+                      function getBlockByNumber(cb) {
+                        self.monitor.evmRpcClient
+                          .get()
+                          .request({
+                            method: "eth_getBlockByNumber",
+                            params: [downloadResult.tx.blockNumber, false],
+                          })
+                          .then((block: any) => {
+                            downloadResult.block = block;
+                            cb(null, block);
+                          })
+                          .catch((e) => {
+                            cb(e, null);
+                          });
+                      },
+                    ],
+                    function done(err, result) {
+                      if (!err) {
+                        dataMap.set(log.transactionHash, {
+                          tx: downloadResult.tx,
+                          block: downloadResult.block,
+                        });
+                        resolve({
+                          tx: downloadResult.tx,
+                          block: downloadResult.block,
+                        });
+                      } else {
+                        reject("download faild");
+                      }
+                    }
+                  );
+                })
+              );
+            });
+            if (downloadTasks.length > 0) {
+              SystemOut.debug(
+                `down load event data: ${task.block_start},${task.block_end}`
+              );
+              try {
+                await Promise.all(downloadTasks);
+              } catch (error) {
+                SystemOut.error(
+                  "An error occurred while processing the promises:",
+                  error
+                );
+                SystemOut.warn(
+                  `retry process ${task.block_start}-${task.block_end}`
+                );
+                blockFetchTaskList.unshift(task);
+                taskDone(true);
+                return;
+              }
+            } else {
+              SystemOut.info("downLoad task count", downloadTasks.length);
+            }
+            events.forEach((log: any) => {
+              const tx = dataMap.get(log.transactionHash).tx;
+              const respBlock = dataMap.get(log.transactionHash).block;
+              SystemOut.info("Time line");
+              SystemOut.info("<--------- tx");
+              SystemOut.info(tx);
 
-        let events = task.event_data.filter((event: any) => {
-          // console.log(event.topics[0])
-          // console.log(filter_info.topic_string)
-          return event.topics[0] == filter_info.topic_string;
-        });
-
-        // console.log(task)
-        // console.log('hit events')
-        // console.log(events)
-
-        let finishedEvent = 0;
-        events.forEach(async (log: any) => {
-          if (self.monitor.evmRpcClient == undefined)
-            throw new Error("evmRpcClient not found");
-
-          self.monitor.evmRpcClient
-            .get()
-            .request({
-              // "jsonrpc": "2.0",
-              method: "eth_getTransactionReceipt",
-              params: [log.transactionHash],
-              //  "id": 0
-            })
-            .then((resp) => {
-              const tx = resp;
-              console.log("--------------------> tx", tx);
-
-              let eventParse = Web3EthAbi.decodeLog(
+              const eventParse = Web3EthAbi.decodeLog(
                 filter_info.event_data.inputs,
                 log.data,
                 log.topics.slice(1)
               );
-
-              self.monitor.evmRpcClient
-                .get()
-                .request({
-                  method: "eth_getBlockByNumber",
-                  params: [tx.blockNumber, false],
-                })
-                .then((respBlock) => {
-                  callback({
-                    event: log,
-                    tx,
-                    eventParse,
-                    block: respBlock,
-                  });
-                  finishedEvent++;
-                })
-                .catch((errBlock) => {
-                  console.log(
-                    "call eth_getBlockByNumber error",
-                    log.transactionHash
-                  );
-                  console.error(errBlock);
-                });
-            })
-            .catch((error) => {
-              console.log(
-                "call eth_getTransactionReceipt error",
-                log.transactionHash
-              );
-              console.error(error);
+              finishedEvent++;
+              callback({
+                event: log,
+                tx,
+                eventParse,
+                block: respBlock,
+              });
             });
-        });
 
-        while (finishedEvent < events.length) {
-          await sleep(100);
+            (async (task) => {
+              try {
+                SystemOut.debug("🐸", task.block_end, events.length);
+                await self.monitor.update_height(
+                  task.block_end,
+                  filter_info.filter_id
+                );
+              } catch (error) {
+                SystemOut.error("update_height error:", error, task.event_data);
+              } finally {
+                taskDone(true);
+                return;
+              }
+            })(task);
+          });
         }
-
-        // if(events.length > 0){
-        //     await self.monitor.update_height(parseInt(events[events.length - 1].blockNumber, 16))
-        // } else {
-        try {
-          await self.monitor.update_height(
-            parseInt(
-              task.event_data[task.event_data.length - 1].blockNumber,
-              16
-            )
-          );
-        } catch (error) {
-          console.log("event_data length error");
-        }
-
-        // }
+      } catch (e) {
+        SystemOut.error(e);
       }
-
-      setTimeout(checkEvent, 1000 * 3);
     };
-    checkEvent();
+    let stop = false;
+    for (;;) {
+      if (stop) {
+        setInterval(() => {
+          SystemOut.debug("filter loop is stoped .");
+        }, 1000 * 10);
+        break;
+      }
+      try {
+        await checkEvent(() => {
+          stop = true;
+        });
+      } catch (e) {
+        SystemOut.error("process event error:", e);
+      } finally {
+        await sleepms(1000 * 3);
+      }
+    }
   };
 }

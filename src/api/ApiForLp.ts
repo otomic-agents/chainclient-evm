@@ -1,6 +1,3 @@
-import Koa from "koa";
-import bodyParser from "koa-bodyparser";
-import stringify from "json-stringify-safe";
 const crypto = require("crypto");
 import Router from "@koa/router";
 import {
@@ -12,7 +9,7 @@ import {
   KoaCtx,
   TransactionRequestCC,
 } from "../interface/interface";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import {
   watchConfirmIn,
   watchConfirmOut,
@@ -21,22 +18,42 @@ import {
   watchTransferIn,
   watchTransferOut,
 } from "../serverUtils/WatcherFactory";
-
+import { SystemOut } from "../utils/systemOut";
+import Monitor from "../monitor/Monitor";
+import { SystemBus } from "../bus/bus";
+import _ from "lodash";
+const AddressZero = "0x0000000000000000000000000000000000000000";
 const buildTransferIn = async (
   ctx: KoaCtx,
   command_transfer_in: CommandTransferIn,
   gas: GasInfo,
   obridgeIface: ethers.utils.Interface
 ): Promise<TransactionRequestCC> => {
-  let wallet_address = await ctx.wallet.getAddress(
+  const wallet_address = await ctx.wallet.getAddress(
     command_transfer_in.sender_wallet_name
   );
-  let calldata = obridgeIface.encodeFunctionData("transferIn", [
+  if (!wallet_address) {
+    throw new Error("wallet not found");
+  }
+  let token = ethers.BigNumber.from(command_transfer_in.token).toHexString(); // address
+  console.log(
+    "ethers.BigNumber.from(command_transfer_in.token).toHexString()",
+    ethers.BigNumber.from(command_transfer_in.token).toHexString()
+  );
+  let targetIsNativeToken = false;
+  if (
+    ethers.BigNumber.from(command_transfer_in.token).toHexString() == "0x00"
+  ) {
+    token = AddressZero;
+    targetIsNativeToken = true;
+  }
+
+  const calldata = obridgeIface.encodeFunctionData("transferIn", [
     wallet_address, // address _sender,
     ethers.BigNumber.from(
       command_transfer_in.user_receiver_address
     ).toHexString(), // address _dstAddress,
-    ethers.BigNumber.from(command_transfer_in.token).toHexString(), // address _token,
+    token,
     command_transfer_in.token_amount, // uint256 _token_amount,
     command_transfer_in.eth_amount, // uint256 _eth_amount,
     ethers.utils.arrayify(command_transfer_in.hash_lock), // bytes32 _hashlock,
@@ -46,7 +63,7 @@ const buildTransferIn = async (
     command_transfer_in.agreement_reached_time,
   ]);
 
-  let transactionRequest: TransactionRequestCC = {
+  const transactionRequest: TransactionRequestCC = {
     to: ctx.config.evm_config.contract_address,
     from: wallet_address,
     data: calldata,
@@ -62,6 +79,9 @@ const buildTransferIn = async (
     sended: undefined,
     error: undefined,
   };
+  if (targetIsNativeToken) {
+    transactionRequest.value = command_transfer_in.token_amount;
+  }
 
   transactionRequest.rawData = command_transfer_in;
 
@@ -74,15 +94,26 @@ const buildTransferConfirm = async (
   gas: GasInfo,
   obridgeIface: ethers.utils.Interface
 ): Promise<TransactionRequestCC> => {
-  let wallet_address = await ctx.wallet.getAddress(
+  const wallet_address = await ctx.wallet.getAddress(
     command_transfer_confirm.sender_wallet_name
   );
-  let calldata = obridgeIface.encodeFunctionData("confirmTransferIn", [
+  let token = ethers.BigNumber.from(
+    command_transfer_confirm.token
+  ).toHexString();
+  let targetIsNativeToken = false;
+  if (
+    ethers.BigNumber.from(command_transfer_confirm.token).toHexString() ==
+    "0x00"
+  ) {
+    token = AddressZero;
+    targetIsNativeToken = true;
+  }
+  const calldata = obridgeIface.encodeFunctionData("confirmTransferIn", [
     wallet_address, // address _sender,
     ethers.BigNumber.from(
       command_transfer_confirm.user_receiver_address
     ).toHexString(), // address _receiver,
-    ethers.BigNumber.from(command_transfer_confirm.token).toHexString(), // address _token,
+    token, // address _token,
     command_transfer_confirm.token_amount, // uint256 _token_amount,
     command_transfer_confirm.eth_amount, // uint256 _eth_amount,
     ethers.utils.arrayify(command_transfer_confirm.hash_lock), // bytes32 _hashlock,
@@ -91,7 +122,7 @@ const buildTransferConfirm = async (
     command_transfer_confirm.agreement_reached_time,
   ]);
 
-  let transactionRequest: TransactionRequestCC = {
+  const transactionRequest: TransactionRequestCC = {
     to: ctx.config.evm_config.contract_address,
     from: wallet_address,
     data: calldata,
@@ -117,15 +148,23 @@ const buildTransferRefund = async (
   gas: GasInfo,
   obridgeIface: ethers.utils.Interface
 ): Promise<TransactionRequestCC> => {
-  let wallet_address = await ctx.wallet.getAddress(
+  const wallet_address = await ctx.wallet.getAddress(
     command_transfer_refund.sender_wallet_name
   );
-  let calldata = obridgeIface.encodeFunctionData("refundTransferIn", [
+  let token = ethers.BigNumber.from(command_transfer_refund.token).toHexString(); // address
+  let targetIsNativeToken = false;
+  if (
+    ethers.BigNumber.from(command_transfer_refund.token).toHexString() == "0x00"
+  ) {
+    token = AddressZero;
+    targetIsNativeToken = true;
+  }
+  const calldata = obridgeIface.encodeFunctionData("refundTransferIn", [
     wallet_address, // address _sender,
     ethers.BigNumber.from(
       command_transfer_refund.user_receiver_address
     ).toHexString(), // address _receiver,
-    ethers.BigNumber.from(command_transfer_refund.token).toHexString(), // address _token,
+    token, // address _token,
     command_transfer_refund.token_amount, // uint256 _token_amount,
     command_transfer_refund.eth_amount, // uint256 _eth_amount,
     ethers.utils.arrayify(command_transfer_refund.hash_lock), // bytes32 _hashlock,
@@ -133,7 +172,7 @@ const buildTransferRefund = async (
     command_transfer_refund.agreement_reached_time,
   ]);
 
-  let transactionRequest: TransactionRequestCC = {
+  const transactionRequest: TransactionRequestCC = {
     to: ctx.config.evm_config.contract_address,
     from: wallet_address,
     data: calldata,
@@ -180,9 +219,8 @@ const forwardToTransactionManager = (
   }
 };
 
-function getObjectHash(obj) {
-  // 将对象序列化为一个确定的字符串表示
-  function serializeObject(obj) {
+function getObjectHash(obj: any) {
+  function serializeObject(obj: any): any {
     if (typeof obj !== "object" || obj === null) {
       return String(obj);
     }
@@ -192,9 +230,7 @@ function getObjectHash(obj) {
     }
 
     const keys = Object.keys(obj).sort();
-    return `{${keys
-      .map((key) => `${key}:${serializeObject(obj[key])}`)
-      .join(",")}}`;
+    return `{${keys.map((key) => `${key}:${serializeObject(obj[key])}`).join(",")}}`;
   }
 
   // 使用 MD5 哈希算法生成哈希值
@@ -206,15 +242,15 @@ function getObjectHash(obj) {
 function cacheByFirstParamHashDecorator(): any {
   const cacheMap = new Map();
 
-  return function (target, propertyKey, descriptor) {
+  return function (target: any, propertyKey: any, descriptor: any) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = function (...args) {
+    descriptor.value = function (...args: any[]) {
       const firstParam = args[0];
       const paramHash = getObjectHash(firstParam);
 
       if (cacheMap.has(paramHash)) {
-        console.log("Using cached result for hash", paramHash);
+        SystemOut.debug("Using cached result for hash", paramHash);
         return cacheMap.get(paramHash);
       }
 
@@ -230,8 +266,9 @@ function cacheByFirstParamHashDecorator(): any {
 export default class ApiForLp {
   obridgeIface: ethers.utils.Interface | undefined;
   @cacheByFirstParamHashDecorator()
-  private registerLpnode(requestBody, monitor, config) {
-    let lpnode_server_url = requestBody.lpnode_server_url;
+  private registerLpnode(requestBody: any, monitor: Monitor, config: any) {
+    const lpnode_server_url = requestBody.lpnode_server_url;
+    SystemOut.debug(lpnode_server_url);
     if (lpnode_server_url == undefined) {
       return {
         code: 30207,
@@ -294,7 +331,6 @@ export default class ApiForLp {
     router.post(
       `/evm-client-${config.system_chain_id}/lpnode/register_lpnode_support_duplication`,
       async (ctx, next) => {
-        console.log("register_lpnode_support_duplication");
         ctx.response.body = {
           code: 200,
           message: "true",
@@ -304,22 +340,17 @@ export default class ApiForLp {
     router.post(
       `/evm-client-${config.system_chain_id}/lpnode/register_lpnode`,
       async (ctx, next) => {
-        console.log("registerLPNode");
-
         if (this.obridgeIface == undefined) {
           this.obridgeIface = new ethers.utils.Interface(
             ctx.config.evm_config.abi.obridge
           );
 
-          console.log("config:");
-          console.log(ctx.config.evm_config);
+          SystemOut.info("config:");
+          SystemOut.info(JSON.stringify(ctx.config.evm_config));
 
-          console.log("obridgeIface:");
-          console.log(this.obridgeIface);
+          // systemOutput.info('obridgeIface:')
+          // systemOutput.info(JSON.stringify(this.obridgeIface))
         }
-
-        let lpnode_server_url = (ctx.request.body as any).lpnode_server_url;
-        console.log("lpnode_server_url:", lpnode_server_url);
         ctx.response.body = this.registerLpnode(
           ctx.request.body,
           ctx.monitor,
@@ -331,9 +362,11 @@ export default class ApiForLp {
     router.post(
       `/evm-client-${config.system_chain_id}/lpnode/transfer_in`,
       async (ctx, next) => {
-        let transaction_type = (ctx.request.body as any).transaction_type;
-        let command_transfer_in = (ctx.request.body as any).command_transfer_in;
-        let gas = (ctx.request.body as any).gas;
+        SystemBus.sendAction({ action: "new_transaction_request", payload: _.clone(ctx.request.body) })
+        const transaction_type = (ctx.request.body as any).transaction_type;
+        const command_transfer_in = (ctx.request.body as any)
+          .command_transfer_in;
+        const gas = (ctx.request.body as any).gas;
 
         console.log("on transfer in");
         console.log("transaction_type:", transaction_type);
@@ -342,6 +375,13 @@ export default class ApiForLp {
         console.log("gas:");
         console.log(gas);
 
+        // systemOutput.debug("Don't want to operate")
+        // ctx.response.body = {
+        //   code: 30208,
+        //   message: "obridgeIface not found",
+        // };
+        // return;
+
         if (this.obridgeIface == undefined) {
           ctx.response.body = {
             code: 30208,
@@ -349,14 +389,22 @@ export default class ApiForLp {
           };
           return;
         }
-        let transaction = await buildTransferIn(
-          ctx,
-          command_transfer_in,
-          gas,
-          this.obridgeIface
-        );
+        try {
+          const transaction = await buildTransferIn(
+            ctx,
+            command_transfer_in,
+            gas,
+            this.obridgeIface
+          );
 
-        forwardToTransactionManager(ctx, transaction, transaction_type);
+          forwardToTransactionManager(ctx, transaction, transaction_type);
+        } catch (e) {
+          ctx.response.body = {
+            code: 30209,
+            message: "buildTransferIn error",
+          };
+          SystemOut.error(e);
+        }
 
         ctx.response.body = {
           code: 200,
@@ -371,10 +419,10 @@ export default class ApiForLp {
         console.log("on refund");
         console.log(ctx.request.body);
 
-        let transaction_type = (ctx.request.body as any).transaction_type;
-        let command_transfer_refund = (ctx.request.body as any)
+        const transaction_type = (ctx.request.body as any).transaction_type;
+        const command_transfer_refund = (ctx.request.body as any)
           .command_transfer_refund;
-        let gas = (ctx.request.body as any).gas;
+        const gas = (ctx.request.body as any).gas;
 
         if (this.obridgeIface == undefined) {
           ctx.response.body = {
@@ -383,7 +431,7 @@ export default class ApiForLp {
           };
           return;
         }
-        let transaction = await buildTransferRefund(
+        const transaction = await buildTransferRefund(
           ctx,
           command_transfer_refund,
           gas,
@@ -402,10 +450,10 @@ export default class ApiForLp {
     router.post(
       `/evm-client-${config.system_chain_id}/lpnode/confirm`,
       async (ctx, next) => {
-        let transaction_type = (ctx.request.body as any).transaction_type;
-        let command_transfer_confirm = (ctx.request.body as any)
+        const transaction_type = (ctx.request.body as any).transaction_type;
+        const command_transfer_confirm = (ctx.request.body as any)
           .command_transfer_in_confirm;
-        let gas = (ctx.request.body as any).gas;
+        const gas = (ctx.request.body as any).gas;
 
         console.log("on confirm in");
         console.log("transaction_type:", transaction_type);
@@ -421,7 +469,7 @@ export default class ApiForLp {
           };
           return;
         }
-        let transaction = await buildTransferConfirm(
+        const transaction = await buildTransferConfirm(
           ctx,
           command_transfer_confirm,
           gas,
@@ -461,11 +509,7 @@ export default class ApiForLp {
       async (ctx, next) => {
         const signData = (ctx.request.body as any).sign_data;
         const walletName = (ctx.request.body as any).wallet_name;
-
-        console.log("on sign_message_712");
-        console.log("signData", signData);
-        console.log("walletName", walletName);
-
+        SystemOut.info("on sign_message_712", walletName, signData);
         const signed = await ctx.wallet.signMessage712(signData, walletName);
 
         console.log("signed", signed);

@@ -27,9 +27,9 @@ export default class StatusSyncer{
     start = async () => {
 
         setInterval(async () => {
-            let monitorInfo = await this.getMonitorStatus()
-            let walletInfo = await this.getWalletStatus()
-            let transactionManagerInfo = await this.getTransactionManagerStatus()
+            const monitorInfo = await this.getMonitorStatus()
+            const walletInfo = await this.getWalletStatus()
+            const transactionManagerInfo = await this.getTransactionManagerStatus()
 
             if (this.config == undefined) throw new Error("state error config undefined");
             if (this.redis == undefined) throw new Error("state error redis undefined");

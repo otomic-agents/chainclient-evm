@@ -60,6 +60,7 @@ export interface WalletConfig {
 export interface CommandTransfer {
     token: string
     sender_wallet_name: string
+    token_amount: string
 }
 
 export interface CommandTransferIn {
@@ -152,6 +153,7 @@ export interface BlockFetchTask {
 }
 
 export interface FilterInfo {
+    filter_id: string
     contract_address: string
     topic_string: string
     event_data: any
