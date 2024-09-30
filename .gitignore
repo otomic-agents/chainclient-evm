@@ -9,3 +9,8 @@ dotnet/ExternalLibrary/obj/**/*
 dotnet/StartUp/bin/**/*
 dotnet/StartUp/obj/**/*
 lp-env-prod.sh
+dist/*
+map/*
+target/*
+bin/**/*
+bin
