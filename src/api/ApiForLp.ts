@@ -53,11 +53,13 @@ const buildTransferIn = async (
     ethers.BigNumber.from(
       command_transfer_in.user_receiver_address
     ).toHexString(), // address _dstAddress,
-    token,
-    command_transfer_in.token_amount, // uint256 _token_amount,
-    command_transfer_in.eth_amount, // uint256 _eth_amount,
+    token, // _token (address)
+    command_transfer_in.token_amount, // _token_amount (uint256),
+    command_transfer_in.eth_amount, // _eth_amount (uint256),
     ethers.utils.arrayify(command_transfer_in.hash_lock), // bytes32 _hashlock,
-    command_transfer_in.step_time_lock, // uint64 _timelock,
+    command_transfer_in.expected_single_step_time, // _expectedSingleStepTime (uint64),
+    command_transfer_in.tolerant_single_step_time,   // _tolerantSingleStepTime(uint64)
+    command_transfer_in.earliest_refund_time, // _earliestRefundTime(uint64)
     command_transfer_in.src_chain_id, // uint64 _srcChainId,
     ethers.utils.arrayify(command_transfer_in.src_transfer_id), // bytes32 _srcTransferId
     command_transfer_in.agreement_reached_time,
@@ -109,17 +111,19 @@ const buildTransferConfirm = async (
     targetIsNativeToken = true;
   }
   const calldata = obridgeIface.encodeFunctionData("confirmTransferIn", [
-    wallet_address, // address _sender,
+    wallet_address, // _sender (address)
     ethers.BigNumber.from(
       command_transfer_confirm.user_receiver_address
-    ).toHexString(), // address _receiver,
-    token, // address _token,
+    ).toHexString(), // _receiver (address)
+    token, // _token (address),
     command_transfer_confirm.token_amount, // uint256 _token_amount,
     command_transfer_confirm.eth_amount, // uint256 _eth_amount,
     ethers.utils.arrayify(command_transfer_confirm.hash_lock), // bytes32 _hashlock,
-    command_transfer_confirm.step_time_lock, // uint64 _timelock,
+    command_transfer_confirm.expected_single_step_time, // _expectedSingleStepTime (uint64)
+    command_transfer_confirm.tolerant_single_step_time, // _tolerantSingleStepTime (uint64)
+    command_transfer_confirm.earliest_refund_time, // _earliestRefundTime (uint64)
     ethers.utils.arrayify(command_transfer_confirm.preimage), // bytes32 _preimage
-    command_transfer_confirm.agreement_reached_time,
+    command_transfer_confirm.agreement_reached_time, // _agreementReachedTime (uint64)
   ]);
 
   const transactionRequest: TransactionRequestCC = {
@@ -168,8 +172,10 @@ const buildTransferRefund = async (
     command_transfer_refund.token_amount, // uint256 _token_amount,
     command_transfer_refund.eth_amount, // uint256 _eth_amount,
     ethers.utils.arrayify(command_transfer_refund.hash_lock), // bytes32 _hashlock,
-    command_transfer_refund.step_time_lock, // uint64 _timelock,
-    command_transfer_refund.agreement_reached_time,
+    command_transfer_refund.expected_single_step_time, // _expectedSingleStepTime (uint64)
+    command_transfer_refund.tolerant_single_step_time, // _tolerantSingleStepTime (uint64)
+    command_transfer_refund.earliest_refund_time, // _earliestRefundTime (uint64)
+    command_transfer_refund.agreement_reached_time, // _agreementReachedTime (uint64)
   ]);
 
   const transactionRequest: TransactionRequestCC = {

@@ -10,6 +10,8 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
+  "terminal.integrated.fontFamily": "Cascadia Code, Consolas, 'Courier New', monospace",
+  "terminal.integrated.fontSize": 12,
   "files.eol": "\n",
   "editor.minimap.enabled": true,
   "search.followSymlinks": false,
@@ -45,4 +47,16 @@
   "editor.unicodeHighlight.nonBasicASCII": false,
   "debug.allowBreakpointsEverywhere": true,
   "debug.showBreakpointsInOverviewRuler": true,
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "server": "otmoic-relay-db-postgresql-postgresql-ha-pgpool",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "otmoic-relay-db-postgresql-postgresql-ha-pgpool",
+      "password": "EavIOZ4VcZhmRAox",
+      "database": "postgres",
+      "username": "postgres"
+    }
+  ],
 }

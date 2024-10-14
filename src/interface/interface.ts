@@ -70,10 +70,12 @@ export interface CommandTransferIn {
     token_amount: string
     eth_amount: string
     hash_lock: string
-    step_time_lock: string
     src_chain_id: string
     src_transfer_id: string
     agreement_reached_time: string
+    expected_single_step_time: string
+    tolerant_single_step_time: string
+    earliest_refund_time: string
 }
 
 export interface CommandTransferConfirm {
@@ -84,9 +86,11 @@ export interface CommandTransferConfirm {
     token_amount: string
     eth_amount: string
     hash_lock: string
-    step_time_lock: string
     preimage: string
     agreement_reached_time: string
+    expected_single_step_time: string
+    tolerant_single_step_time: string
+    earliest_refund_time: string
 }
 
 export interface CommandTransferRefund {
@@ -96,8 +100,10 @@ export interface CommandTransferRefund {
     token_amount: string
     eth_amount: string
     hash_lock: string
-    step_time_lock: string
     agreement_reached_time: string
+    expected_single_step_time: string
+    tolerant_single_step_time: string
+    earliest_refund_time: string
 }
 
 export interface CommandTransferOutConfirm {
@@ -108,10 +114,12 @@ export interface CommandTransferOutConfirm {
     eth_amount: string
     hash_lock: string
     relay_hash_lock: string
-    step_time_lock: string
     preimage: string
     relay_preimage: string
     agreement_reached_time: string
+    expected_single_step_time: string
+    tolerant_single_step_time: string
+    earliest_refund_time: string
 }
 
 export interface CommandTransferOutRefund {
@@ -121,8 +129,10 @@ export interface CommandTransferOutRefund {
     token_amount: string
     eth_amount: string
     hash_lock: string
-    step_time_lock: string
     agreement_reached_time: string
+    expected_single_step_time: string
+    tolerant_single_step_time: string
+    earliest_refund_time: string
 }
 
 export interface GasInfo {

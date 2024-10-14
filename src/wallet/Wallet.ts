@@ -225,9 +225,8 @@ export default class Wallet {
         const domain = {
           name: 'OtmoicSwap',
           version: '1',
-          chainId: this.evmConfig.chain_id,
+          chainId: parseInt(this.evmConfig.chain_id),
         }
-
         const typedData = {
           types: {
             Message: [
@@ -242,16 +241,29 @@ export default class Wallet {
               { name: 'dst_native_amount', type: 'string' },
               { name: 'requestor', type: 'string' },
               { name: 'lp_id', type: 'string' },
-              { name: 'step_time_lock', type: 'uint256' },
               { name: 'agreement_reached_time', type: 'uint256' },
+              { name: 'expected_single_step_time', type: 'uint256' },
+              { name: 'tolerant_single_step_time', type: 'uint256' },
+              { name: 'earliest_refund_time', type: 'uint256' },
             ],
           },
           primaryType: 'Message',
           domain,
           message: signData,
         }
+        try {
+          SystemOut.debug("source 🪰🪰🪰", domain)
+          SystemOut.debug("source 🪰🪰🪰", typedData.types)
+          SystemOut.debug("source 🪰🪰🪰", signData)
+          SystemOut.debug("source address", wallet.web3Wallet.address)
+          signed = await wallet.web3Wallet._signTypedData(domain, typedData.types, signData)
+          SystemOut.debug("signed  data is:", signed, domain)
+          SystemOut.debug("domain", domain)
+        } catch (e) {
+          SystemOut.debug("The signature has an error")
+          SystemOut.error(e)
+        }
 
-        signed = await wallet.web3Wallet._signTypedData(domain, typedData.types, signData)
       }
     }
 

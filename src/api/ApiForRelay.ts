@@ -6,6 +6,7 @@ import { watchConfirmIn, watchConfirmOut, watchRefundIn, watchRefundOut, watchTr
 import { ethers } from 'ethers'
 import { arrayify } from 'ethers/lib/utils';
 import { TransactionHelper } from '../utils/transactionHelper'
+import { SystemOut } from '../utils/systemOut'
 const AddressZero = "0x0000000000000000000000000000000000000000";
 const domain = {
     name: 'OtmoicSwap',
@@ -26,8 +27,10 @@ const types = {
         { name: 'dst_native_amount', type: 'string' },
         { name: 'requestor', type: 'string' },
         { name: 'lp_id', type: 'string' },
-        { name: 'step_time_lock', type: 'uint256' },
         { name: 'agreement_reached_time', type: 'uint256' },
+        { name: 'expected_single_step_time', type: 'uint256' },
+        { name: 'tolerant_single_step_time', type: 'uint256' },
+        { name: 'earliest_refund_time', type: 'uint256' },
     ],
 };
 
@@ -36,14 +39,14 @@ const verifySignature = (signature: any, value: any, chainId: number) => {
 
     const sigBuffer = ethers.utils.arrayify(signature);
     const fixedSignature = ethers.utils.splitSignature(sigBuffer);
-
+    SystemOut.debug("signature", signature)
     // version 1
-    console.log('domain', domain)
-    console.log('types', types)
-    console.log('value', value)
+    SystemOut.debug('domain', domain)
+    SystemOut.debug('types', types)
+    SystemOut.debug('value', value)
     const recoveredAddress = ethers.utils.verifyTypedData(domain, types, value, fixedSignature);
 
-    console.log('Recovered Address:', recoveredAddress);
+    SystemOut.debug('Recovered Address:', recoveredAddress);
     return recoveredAddress
 };
 
@@ -65,7 +68,9 @@ const buildTransferInConfirm = async (ctx: KoaCtx, command_transfer_confirm: Com
         command_transfer_confirm.token_amount,                                                      // uint256 _token_amount,
         command_transfer_confirm.eth_amount,                                                        // uint256 _eth_amount,
         ethers.utils.arrayify(command_transfer_confirm.hash_lock),                                  // bytes32 _hashlock,
-        command_transfer_confirm.step_time_lock,                                                    // uint64 _timelock,
+        command_transfer_confirm.expected_single_step_time, // _expectedSingleStepTime (uint64)
+        command_transfer_confirm.tolerant_single_step_time, // _tolerantSingleStepTime (uint64)
+        command_transfer_confirm.earliest_refund_time, // _earliestRefundTime (uint64)                                                // uint64 _timelock,
         ethers.utils.arrayify(command_transfer_confirm.preimage),                                   // bytes32 _preimage
         command_transfer_confirm.agreement_reached_time
     ])
@@ -108,7 +113,9 @@ const buildTransferInRefund = async (ctx: KoaCtx, command_transfer_refund: Comma
         command_transfer_refund.token_amount,                                                       // uint256 _token_amount,
         command_transfer_refund.eth_amount,                                                         // uint256 _eth_amount,
         ethers.utils.arrayify(command_transfer_refund.hash_lock),                                   // bytes32 _hashlock,
-        command_transfer_refund.step_time_lock,                                                     // uint64 _timelock,
+        command_transfer_refund.expected_single_step_time, // _expectedSingleStepTime (uint64)
+        command_transfer_refund.tolerant_single_step_time, // _tolerantSingleStepTime (uint64)
+        command_transfer_refund.earliest_refund_time, // _earliestRefundTime (uint64)
         command_transfer_refund.agreement_reached_time
     ])
 
@@ -142,10 +149,11 @@ const buildTransferOutConfirm = async (ctx: KoaCtx, command_transfer_confirm: Co
         command_transfer_confirm.eth_amount,                                                        // uint256 _eth_amount,
         ethers.utils.arrayify(command_transfer_confirm.hash_lock),                                  // bytes32 _hashlock,
         ethers.utils.arrayify(command_transfer_confirm.relay_hash_lock),
-        command_transfer_confirm.step_time_lock,                                                    // uint64 _timelock,
-        ethers.utils.arrayify(command_transfer_confirm.preimage),                                   // bytes32 _preimage
-        ethers.utils.arrayify(command_transfer_confirm.relay_preimage),
-        command_transfer_confirm.agreement_reached_time
+        command_transfer_confirm.expected_single_step_time, //_expectedSingleStepTime (uint64)
+        command_transfer_confirm.tolerant_single_step_time, // _tolerantSingleStepTime (uint64)
+        command_transfer_confirm.earliest_refund_time,                                            // _earliestRefundTime (uint64)
+        ethers.utils.arrayify(command_transfer_confirm.preimage),                                   // _preimage (bytes32)
+        command_transfer_confirm.agreement_reached_time // _agreementReachedTime (uint64)
     ])
 
     const transactionRequest: TransactionRequestCC = {
@@ -178,8 +186,10 @@ const buildTransferOutRefund = async (ctx: KoaCtx, command_transfer_refund: Comm
         command_transfer_refund.token_amount,                                                       // uint256 _token_amount,
         command_transfer_refund.eth_amount,                                                         // uint256 _eth_amount,
         ethers.utils.arrayify(command_transfer_refund.hash_lock),                                   // bytes32 _hashlock,
-        command_transfer_refund.step_time_lock,                                                     // uint64 _timelock,
-        command_transfer_refund.agreement_reached_time
+        command_transfer_refund.expected_single_step_time, // _expectedSingleStepTime (uint64)
+        command_transfer_refund.tolerant_single_step_time,// _tolerantSingleStepTime (uint64)
+        command_transfer_refund.earliest_refund_time, // _earliestRefundTime (uint64)
+        command_transfer_refund.agreement_reached_time // _agreementReachedTime (uint64)
     ])
 
     const transactionRequest: TransactionRequestCC = {
