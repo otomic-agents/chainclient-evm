@@ -328,7 +328,11 @@ class TransactionCheckLoop {
       lfirst.gasPrice = gas_price;
     }
     let provider: any;
-    lfirst.gasPrice = ethers.utils.parseUnits('12', 'gwei').toString()
+    if (
+      lfirst.chainId == "97" || lfirst.chainId == 97
+    ) {
+      lfirst.gasPrice = ethers.utils.parseUnits('7', 'gwei').toString()
+    }
     return new Promise((resolve) => {
       asyncLib.waterfall(
         [
