@@ -202,7 +202,6 @@ export default class ChainClientEVM {
             watchTransferOut(this.monitor, Config.relay_server_url.on_transfer_out, Config.evm_config, false, undefined);
         }
         if (Config.relay_server_url.on_confirm_in != undefined && Config.relay_server_url.on_confirm_in != "") {
-            SystemOut.debug("watch confirm in ", Config.relay_server_url.on_confirm_in, "");
             watchConfirmIn(this.monitor, Config.relay_server_url.on_confirm_in, Config.evm_config, false, undefined)
         }
         if (Config.relay_server_url.on_confirm != undefined && Config.relay_server_url.on_confirm != "") {
@@ -243,12 +242,13 @@ export default class ChainClientEVM {
 
         app.use(bodyParser({}));
         app.use(async (ctx, next) => {
+            SystemOut.info(`${ctx.request.method} ${ctx.request.url} Start`)
             const start: any = new Date();
             await next();
             const end: any = new Date();
             const duration = (end - start) / 1000;
 
-            SystemOut.info(`${ctx.request.method} ${ctx.request.url} ${duration.toFixed(2)} seconds`);
+            SystemOut.info(`${ctx.request.method} ${ctx.request.url} End ${duration.toFixed(2)} seconds`);
         });
         app.use(this.router.routes()).use(this.router.allowedMethods());
         app.listen(Config.server_config.port);

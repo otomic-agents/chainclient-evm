@@ -39,8 +39,8 @@ export default class EventFilter {
     };
     setInterval(dispatcher, 3000);
     setInterval(() => {
-      SystemOut.info("🐽Current number of filters:", this.filterCount);
-    }, 5000);
+      SystemOut.info("Current number of filters:", this.filterCount);
+    }, 1000 * 60);
   }
 
   startFilter = async (filter_info: FilterInfo, callback: Function) => {
@@ -157,13 +157,13 @@ export default class EventFilter {
                 return;
               }
             } else {
-              SystemOut.info("downLoad task count", downloadTasks.length);
+              // SystemOut.info("downLoad task count", downloadTasks.length);
             }
             events.forEach((log: any) => {
               const tx = dataMap.get(log.transactionHash).tx;
               const respBlock = dataMap.get(log.transactionHash).block;
               SystemOut.info("Time line");
-              SystemOut.info("<--------- tx");
+              SystemOut.info("<-- tx");
               SystemOut.info(tx);
 
               const eventParse = Web3EthAbi.decodeLog(
@@ -182,7 +182,6 @@ export default class EventFilter {
 
             (async (task) => {
               try {
-                SystemOut.debug("🐸", task.block_end, events.length);
                 await self.monitor.update_height(
                   task.block_end,
                   filter_info.filter_id
@@ -201,10 +200,10 @@ export default class EventFilter {
       }
     };
     let stop = false;
-    for (;;) {
+    for (; ;) {
       if (stop) {
         setInterval(() => {
-          SystemOut.debug("filter loop is stoped .");
+          SystemOut.info("filter loop is stoped .");
         }, 1000 * 10);
         break;
       }

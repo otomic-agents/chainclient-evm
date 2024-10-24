@@ -138,7 +138,19 @@ const buildTransferInRefund = async (ctx: KoaCtx, command_transfer_refund: Comma
 
     return transactionRequest
 }
-
+// const contractArgs = [
+//     quoteConfirmResponse.pre_business.swap_asset_information.sender,
+//     quoteConfirmResponse.pre_business.swap_asset_information.quote.quote_base.lp_bridge_address, // 钱给lp
+//     quoteConfirmResponse.pre_business.swap_asset_information.quote.quote_base.bridge.src_token,
+//     quoteConfirmResponse.pre_business.swap_asset_information.amount,
+//     quoteConfirmResponse.pre_business.swap_asset_information.dst_native_amount,
+//     quoteConfirmResponse.pre_business.hashlock_evm,
+//     quoteConfirmResponse.pre_business.swap_asset_information.expected_single_step_time,
+//     quoteConfirmResponse.pre_business.swap_asset_information.tolerant_single_step_time,
+//     quoteConfirmResponse.pre_business.swap_asset_information.earliest_refund_time,
+//     quoteConfirmResponse.pre_business.preimage,
+//     quoteConfirmResponse.pre_business.swap_asset_information.agreement_reached_time,
+// ]
 const buildTransferOutConfirm = async (ctx: KoaCtx, command_transfer_confirm: CommandTransferOutConfirm, gas: GasInfo, obridgeIface: ethers.utils.Interface): Promise<TransactionRequestCC> => {
     command_transfer_confirm = TransactionHelper.format(command_transfer_confirm);
     const calldata = obridgeIface.encodeFunctionData("confirmTransferOut", [
@@ -147,8 +159,7 @@ const buildTransferOutConfirm = async (ctx: KoaCtx, command_transfer_confirm: Co
         command_transfer_confirm.token,                        // address _token,
         command_transfer_confirm.token_amount,                                                      // uint256 _token_amount,
         command_transfer_confirm.eth_amount,                                                        // uint256 _eth_amount,
-        ethers.utils.arrayify(command_transfer_confirm.hash_lock),                                  // bytes32 _hashlock,
-        ethers.utils.arrayify(command_transfer_confirm.relay_hash_lock),
+        ethers.utils.arrayify(command_transfer_confirm.hash_lock),                                  // bytes32 _hashlock
         command_transfer_confirm.expected_single_step_time, //_expectedSingleStepTime (uint64)
         command_transfer_confirm.tolerant_single_step_time, // _tolerantSingleStepTime (uint64)
         command_transfer_confirm.earliest_refund_time,                                            // _earliestRefundTime (uint64)

@@ -66,7 +66,7 @@ const createCallback = (
     event.chain_id = config.system_chain_id;
 
     SystemOut.info(`[key point] on event callback: type [${type}]`);
-    SystemOut.info(event);
+    SystemOut.info(JSON.stringify(event));
     SystemBus.sendAction({ action: "chain_event", payload: _.clone(event) })
 
     if (merge) {

@@ -186,13 +186,13 @@ export default class Wallet {
         balance.decimals = 18
       } else {
         if (this.tokenMap[balance.token] == undefined) {
-          console.log('token_id', balance.token)
+          SystemOut.debug('token_id', balance.token)
           this.tokenMap[balance.token] = new ethers.Contract(balance.token, this.evmConfig.abi.erc20, this.provider)
         }
 
         startCount++
         try {
-          SystemOut.debug('fetch', 'wallet:', balance.wallet_address, 'token:', balance.token)
+          SystemOut.info('fetch', 'wallet:', balance.wallet_address, 'token:', balance.token)
           balance.balance_value = await this.tokenMap[balance.token].balanceOf(balance.wallet_address)
           if (balance.decimals == undefined) {
             balance.decimals = await this.tokenMap[balance.token].decimals()
@@ -252,15 +252,15 @@ export default class Wallet {
           message: signData,
         }
         try {
-          SystemOut.debug("source 🪰🪰🪰", domain)
-          SystemOut.debug("source 🪰🪰🪰", typedData.types)
-          SystemOut.debug("source 🪰🪰🪰", signData)
-          SystemOut.debug("source address", wallet.web3Wallet.address)
+          SystemOut.info("domain", domain)
+          SystemOut.info("types", typedData.types)
+          SystemOut.info("signData", signData)
+          SystemOut.info("address", wallet.web3Wallet.address)
           signed = await wallet.web3Wallet._signTypedData(domain, typedData.types, signData)
-          SystemOut.debug("signed  data is:", signed, domain)
-          SystemOut.debug("domain", domain)
+          SystemOut.info("signed  data is:", signed, domain)
+          SystemOut.info("domain", domain)
         } catch (e) {
-          SystemOut.debug("The signature has an error")
+          SystemOut.info("The signature has an error")
           SystemOut.error(e)
         }
 

@@ -12,9 +12,6 @@ export default class ErrorAlert {
         SystemBus.emittery.on("🚨", (message: Error) => {
             this.pushMessage(message.toString())
         })
-        SystemBus.emittery.on("runError", (message: Error) => {
-            this.pushMessage(message.toString())
-        })
     }
     private report_message_list() {
         setInterval(() => {

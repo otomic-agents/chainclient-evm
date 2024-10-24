@@ -159,7 +159,7 @@ export default class Monitor {
     historyModeStart = () => {
         if (this.modeHistory && this.blockEventFetcher != undefined) {
             this.blockEventFetcher.startFetch();
-            SystemOut.debug("----> historyModeStart");
+            SystemOut.info("----> historyModeStart");
         }
     };
     update_height = async (height: number, filterId: string) => {
