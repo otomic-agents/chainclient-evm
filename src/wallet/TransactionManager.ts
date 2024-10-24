@@ -864,6 +864,18 @@ export default class TransactionManager {
     console.log("token:", token);
     console.log("balance:", (wallet.balance_value as BigNumberish).toString());
 
+    try {
+      if (
+        new BN((wallet.balance_value as BigNumberish).toString()).comparedTo(
+          transaction.rawData["token_amount"]
+        ) == -1
+      ) {
+        throw new Error("wallet balance not enough");
+      }
+    } catch (error) {
+      throw new Error("compare wallet token balance with transaction token amount error");
+    }
+
     const c = new ethers.Contract(
       token,
       this.evmConfig.abi.erc20,
