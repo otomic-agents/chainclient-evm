@@ -187,61 +187,6 @@ class TransactionCheckLoop {
         });
     }
 
-    test_sign = (txData: any, evmConfig: EvmConfig) =>
-        new Promise((result, reject) => {
-            try {
-                needle.post(
-                    dev.sign.sign_url as string,
-                    {
-                        safe_type: "UNSAFE",
-                        chain_type: "EVM",
-                        data: {
-                            sign_type: "CONTRACT_ENCODING_COMPLETED",
-                            secert_id: dev.sign.wallet_id,
-                            to_address: txData.to,
-                            chain_id: ethers.BigNumber.from(evmConfig.chain_id)
-                                .toHexString()
-                                .substring(2),
-                            nonce: ethers.BigNumber.from(txData.nonce)
-                                .toHexString()
-                                .substring(2),
-                            is1155: false,
-                            gas_limit: txData.gasLimit.toHexString().substring(2),
-                            gas_price: ethers.BigNumber.from(txData.gasPrice)
-                                .toHexString()
-                                .substring(2),
-                            transaction_data: txData.data.substring(2),
-                            amount: ethers.BigNumber.from(txData.value)
-                                .toHexString()
-                                .substring(2),
-                        },
-                    },
-                    // {
-                    //     headers: {
-                    //         "Content-Type": "application/json"
-                    //     }
-                    // },
-                    (err, resp) => {
-                        console.log("error:", err);
-                        console.log("resp:", resp?.body);
-
-                        if (
-                            !err &&
-                            resp.body != undefined &&
-                            resp.body.data != undefined &&
-                            resp.body.data.data != undefined
-                        ) {
-                            result(resp.body.data.data);
-                        } else {
-                            reject();
-                        }
-                    }
-                );
-            } catch (error) {
-                console.error(error);
-                return;
-            }
-        });
     private async sendTransaction(
         lfirst: TransactionRequestCC,
         lfirstData: TransactionRequestCC

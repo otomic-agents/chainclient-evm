@@ -79,14 +79,12 @@ const buildTransferIn = async (
     nonce: undefined,
     transactionReceipt: undefined,
     sended: undefined,
-    error: undefined,
+    error: undefined
   };
   if (targetIsNativeToken) {
     transactionRequest.value = command_transfer_in.token_amount;
   }
-
   transactionRequest.rawData = command_transfer_in;
-
   return transactionRequest;
 };
 
@@ -203,12 +201,10 @@ const forwardToTransactionManager = (
   transaction: TransactionRequestCC,
   transaction_type: string
 ) => {
-  console.group("on forwardToTransactionManager");
   console.log("transaction");
   console.log(transaction);
   console.log("transaction_type");
   console.log(transaction_type);
-  console.groupEnd();
 
   switch (transaction_type) {
     case "LOCAL_PADDING":
@@ -378,15 +374,7 @@ export default class ApiForLp {
         console.log("transaction_type:", transaction_type);
         console.log("command_transfer_in:");
         console.log(command_transfer_in);
-        console.log("gas:");
-        console.log(gas);
-
-        // systemOutput.debug("Don't want to operate")
-        // ctx.response.body = {
-        //   code: 30208,
-        //   message: "obridgeIface not found",
-        // };
-        // return;
+        console.log("gas:", gas);
 
         if (this.obridgeIface == undefined) {
           ctx.response.body = {

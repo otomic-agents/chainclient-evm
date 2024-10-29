@@ -152,7 +152,7 @@ export interface TransactionRequestCC {
     nonce: number | undefined
     transactionReceipt: ethers.providers.TransactionReceipt | undefined
     sended: ethers.providers.TransactionResponse | undefined
-    error: any
+    error: any;
 }
 
 export interface BlockFetchTask {
