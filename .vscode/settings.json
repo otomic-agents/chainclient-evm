@@ -10,8 +10,6 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
-  "terminal.integrated.fontFamily": "Cascadia Code, Consolas, 'Courier New', monospace",
-  "terminal.integrated.fontSize": 12,
   "files.eol": "\n",
   "editor.minimap.enabled": true,
   "search.followSymlinks": false,

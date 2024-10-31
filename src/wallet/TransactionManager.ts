@@ -241,6 +241,7 @@ class TransactionCheckLoop {
                                 const gas_limit = await provider.estimateGas(
                                     lfirst as TransactionRequest
                                 );
+                                SystemOut.info("estimateGas succeeded.")
                                 lfirst.gasLimit = gas_limit.add(10000);
                                 callback(null, { needAllowance: false });
                             } catch (err) {
@@ -543,12 +544,15 @@ export default class TransactionManager {
         }
         SystemOut.info("use rpcGas")
         gasPrice = rpcGas;
+        let gas_price: BigNumber = BigNumber.from(gasPrice);
+        let increasedGasPrice = gas_price.mul(130).div(100);
+        gasPrice = increasedGasPrice.toString()
+        SystemOut.info("Increase by 30%", "result:", ethers.utils.formatUnits(gasPrice, "gwei"));
         return gasPrice;
     }
     private async updateDynamicGasPrice() {
         try {
             const rpcResponse = JSON.parse(this.getDynamicGasPriceFunctionResult);
-            //   console.log(rpcResponse);
             if (
                 _.get(rpcResponse, "id", 0) > 0 &&
                 _.get(rpcResponse, "result", null) != null
