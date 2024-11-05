@@ -234,15 +234,21 @@ const forwardToTransactionManager = (ctx: KoaCtx, transaction: TransactionReques
 
     switch (transaction_type) {
         case "LOCAL_PADDING":
-            ctx.transactionManager.sendTransactionLocalPadding(transaction)
+            ctx.transactionManager.enqueueTransactionToLocalPadding(transaction)
             break;
         case "CHAIN_PADDING":
-            ctx.transactionManager.sendTransactionChainPadding(transaction)
+            ctx.transactionManager.enqueueTransactionToChainPadding(transaction)
             break;
         case "FASTEST":
-            ctx.transactionManager.sendTransactionFastest(transaction)
+            ctx.transactionManager.enqueueTransactionToFastest(transaction)
             break;
         default:
+            const errorMessage = `Unsupported transaction type: ${transaction_type}`;
+            SystemOut.error(errorMessage, {
+                transaction_type,
+                transaction: transaction,
+                timestamp: new Date().toISOString()
+            });
             break;
     }
 }

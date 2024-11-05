@@ -153,7 +153,7 @@ export default class TransactionManager {
 
     public getPaddingList() { };
 
-    public async sendTransactionLocalPadding(
+    public async enqueueTransactionToLocalPadding(
         transactionRequest: TransactionRequestCC
     ): Promise<void> {
         if (this.redis == undefined) {
@@ -162,7 +162,7 @@ export default class TransactionManager {
         if (this.localPaddingList == undefined) {
             throw new Error("state error localPaddingList undefined");
         }
-
+        SystemOut.info("enqueueTransactionToLocalPadding")
         const newTransactionRequest = JSON.stringify(transactionRequest);
         await this.redis.rpush(CACHE_KEY_LOCAL_PADDING_LIST, newTransactionRequest);
         this.localPaddingList.push(newTransactionRequest);
@@ -170,10 +170,10 @@ export default class TransactionManager {
 
 
     //Content to be optimized
-    sendTransactionChainPadding = async () => { };
+    enqueueTransactionToChainPadding = async () => { };
 
     //Content to be optimized
-    sendTransactionFastest = async () => { };
+    enqueueTransactionToFastest = async () => { };
 
     cancelPaddingTransaction = async () => { };
 
