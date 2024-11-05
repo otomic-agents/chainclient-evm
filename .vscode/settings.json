@@ -1,7 +1,7 @@
 {
   "editor.tabSize": 2,
   "editor.fontSize": 12,
-  "editor.lineHeight": 23,
+  "editor.lineHeight": 25,
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.formatOnType": true,
@@ -10,6 +10,16 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
+  // 资源管理器相关配置
+  "workbench.list.horizontalScrolling": true,
+  "workbench.tree.indent": 20,
+  "workbench.tree.renderIndentGuides": "onHover",
+  "explorer.decorations.badges": true,
+  "explorer.compactFolders": false,
+  "explorer.decorations.colors": true,
+  "terminal.integrated.fontFamily": "Cascadia Code, Consolas, 'Courier New', monospace",
+  "terminal.integrated.fontSize": 12,
+  "terminal.integrated.scrollback": 5000,
   "files.eol": "\n",
   "editor.minimap.enabled": true,
   "search.followSymlinks": false,

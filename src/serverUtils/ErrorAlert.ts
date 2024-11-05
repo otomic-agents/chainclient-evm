@@ -17,7 +17,7 @@ export default class ErrorAlert {
         setInterval(() => {
             SystemOut.info("message_list_info")
             console.table(this.message_list)
-        }, 1000 * 60)
+        }, 1000 * 60 * 5)
     }
     private pushMessage(message: any) {
         // Check if the array length is already at its limit

@@ -64,6 +64,7 @@ export interface CommandTransfer {
 }
 
 export interface CommandTransferIn {
+    bid?: string;
     sender_wallet_name: string
     user_receiver_address: string
     token: string
@@ -79,6 +80,7 @@ export interface CommandTransferIn {
 }
 
 export interface CommandTransferConfirm {
+    bid?: string
     sender: string
     sender_wallet_name: string
     user_receiver_address: string
@@ -143,7 +145,7 @@ export interface TransactionRequestCC {
     from: string
     to: string
     data: string
-    rawData: CommandTransfer | undefined
+    rawData: CommandTransfer | CommandTransferIn | CommandTransferRefund
     chainId: number | string
     transactionHash: string | undefined
     gasPrice: number | string | undefined

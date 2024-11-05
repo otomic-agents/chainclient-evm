@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "ts-node src/index.ts",
-    "nodestart":"node --enable-source-maps dist/index.js",
+    "nodestart": "node --enable-source-maps dist/index.js",
     "eslint": "eslint --ext .ts,.js ./",
     "esfix": "eslint --fix --ext .ts,.js ./"
   },
@@ -50,8 +50,10 @@
     "ts-node": "^10.x.x",
     "tslog": "^4.9.3",
     "tty-table": "^4.2.3",
+    "typedi": "^0.10.0",
     "typescript": "^5.x.x",
     "uuid": "^10.0.0",
+    "web3": "^4.14.0",
     "web3-eth-abi": "^1.8.0",
     "xprofiler": "^2.6.1",
     "xtransit": "^2.5.0"

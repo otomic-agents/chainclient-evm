@@ -4,7 +4,7 @@ import koaLogger from 'koa-logger';
 import Router from "@koa/router";
 import Redis, { RedisOptions } from "ioredis";
 import { Client } from "@open-rpc/client-js";
-
+import { Container } from "typedi";
 import Config from "./config/Config";
 
 import ApiForLp from "./api/ApiForLp";
@@ -169,7 +169,7 @@ export default class ChainClientEVM {
         console.log("initModule");
         this.monitor = MonitorManager.getInst().createMonitor("default")
         this.wallet = new Wallet();
-        this.transactionManager = new TransactionManager();
+        this.transactionManager = Container.get(TransactionManager);
         this.syncer = new StatusSyncer();
         await this.changeUrl();
         await MonitorManager.getInst().initMoniter("default", this.redis, this.evmRpcClient, Config.evm_config)

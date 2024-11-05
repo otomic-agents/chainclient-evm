@@ -140,7 +140,7 @@ const buildTransferConfirm = async (
     sended: undefined,
     error: undefined,
   };
-
+  transactionRequest.rawData = command_transfer_confirm
   return transactionRequest;
 };
 

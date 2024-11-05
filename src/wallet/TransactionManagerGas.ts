@@ -1,18 +1,15 @@
 import {
   EvmConfig,
-  EvmRpcClient,
-  TransactionRequestCC,
 } from "../interface/interface";
-import { BigNumber, BigNumberish, BytesLike, ethers } from "ethers";
+import { ethers } from "ethers";
 const getMaxGasPrice = (evmConfig: EvmConfig): string => {
   switch (evmConfig.system_chain_id) {
     case "9006": //BSC
       return ethers.utils.parseUnits('8', 'gwei').toString();
     case "9000": //AVAX
-      // return 26000000010;
-      return "-1";
+      return ethers.utils.parseUnits('8', 'gwei').toString();
     case "60":
-      return "-1";
+      return ethers.utils.parseUnits('10', 'gwei').toString();;
     case "966":
       return "-1";
     case "614":
