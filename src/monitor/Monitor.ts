@@ -61,6 +61,9 @@ export default class Monitor {
     public setId(id: string) {
         this.id = id;
     }
+    public setEvmConfig(evmConfig: EvmConfig) {
+        this.evmConfig = evmConfig;
+    }
     public setStartTime(time: number) {
         this.startTime = time;
     }

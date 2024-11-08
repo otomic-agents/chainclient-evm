@@ -64,6 +64,7 @@ export interface CommandTransfer {
 }
 
 export interface CommandTransferIn {
+    txType: string;
     bid?: string;
     sender_wallet_name: string
     user_receiver_address: string

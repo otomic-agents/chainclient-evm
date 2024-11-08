@@ -389,6 +389,7 @@ export default class ApiForLp {
           };
           return;
         }
+        _.set(command_transfer_in, "txType", "in");
         try {
           const transaction = await buildTransferIn(
             ctx,

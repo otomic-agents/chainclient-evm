@@ -94,8 +94,8 @@ export default class TransactionCheckLoop {
     try {
       firstTransaction.value = ethers.BigNumber.from(firstTransaction.value);
       firstTransaction.gasLimit = 500000;
-      if (firstTransactionData.rawData) {
-        SystemOut.debug("ApproveCheck")
+      if (firstTransactionData.rawData && _.get(firstTransactionData, "rawData.txType", "unknow") == "in") {
+        SystemOut.debug("🔍ApproveCheck")
         const needApprove = await this.checkSufficientBalanceAndApproval(firstTransactionData, provider);
         if (needApprove == true) {
           await this.transactionManager.pushApproveToQueue(firstTransactionData);
@@ -272,6 +272,7 @@ export default class TransactionCheckLoop {
         console.log(`[${index + 1}] UTC Time: ${utcTime}`);
         console.log(`    Local Time: ${localTime}`);
         console.log(`    Error: ${error}`);
+        console.dir(error, { depth: 5 })
         console.log("------------------------");
       });
 

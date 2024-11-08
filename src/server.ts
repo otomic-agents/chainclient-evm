@@ -29,6 +29,7 @@ import { SystemOut } from "./utils/systemOut";
 import { HttpRpcClient } from "./serverUtils/HttpRpcClient";
 import { MonitorManager } from "./monitor/MonitorManager";
 import { ApiForStatus } from "./api/ApiForStatus";
+import ApiChain from "./api/ApiChain";
 
 export default class ChainClientEVM {
     router: Router | undefined;
@@ -225,6 +226,7 @@ export default class ChainClientEVM {
         new ApiForLpAdmin().linkRouter(this.router, Config.evm_config as EvmConfig);
         new ApiSupport().linkRouter(this.router, Config.evm_config as EvmConfig);
         new ApiForStatus().linkRouter(this.router, Config.evm_config as EvmConfig);
+        new ApiChain().linkRouter(this.router, Config.evm_config as EvmConfig);
 
     };
 

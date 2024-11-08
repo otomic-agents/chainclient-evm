@@ -1,7 +1,7 @@
 {
   "editor.tabSize": 2,
-  "editor.fontSize": 12,
-  "editor.lineHeight": 25,
+  "editor.fontSize": 11,
+  "editor.lineHeight": 26,
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.formatOnType": true,
