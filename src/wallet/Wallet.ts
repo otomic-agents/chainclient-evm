@@ -173,15 +173,14 @@ export default class Wallet {
         })
       })
     })
-
-    let startCount = 0
-    let endCount = 0
-    balance_list.forEach(async (balance) => {
+    // console.log(balance_list)
+    for (const balance of balance_list) {
       if (this.provider == undefined) throw new Error('state error provider undefined')
       if (this.tokenMap == undefined) throw new Error('state error tokenMap undefined')
       if (this.evmConfig == undefined) throw new Error('state error evmConfig undefined')
 
       if (balance.token == ethers.constants.AddressZero) {
+        SystemOut.info('fetch native balance ', 'wallet:', balance.wallet_address, 'token:', balance.token)
         balance.balance_value = await this.provider.getBalance(balance.wallet_address)
         balance.decimals = 18
       } else {
@@ -190,9 +189,9 @@ export default class Wallet {
           this.tokenMap[balance.token] = new ethers.Contract(balance.token, this.evmConfig.abi.erc20, this.provider)
         }
 
-        startCount++
         try {
-          SystemOut.info('fetch', 'wallet:', balance.wallet_address, 'token:', balance.token)
+          SystemOut.info('fetch balance ', 'wallet:', balance.wallet_address, 'token:', balance.token)
+          // console.log(this.tokenMap);
           balance.balance_value = await this.tokenMap[balance.token].balanceOf(balance.wallet_address)
           if (balance.decimals == undefined) {
             balance.decimals = await this.tokenMap[balance.token].decimals()
@@ -202,15 +201,8 @@ export default class Wallet {
           console.error('fetch balance error')
           console.error(error)
         }
-
-        endCount++
       }
-    })
-
-    while (endCount < startCount) {
-      await sleep(100)
     }
-
     this.wallet_info = balance_list
   }
 

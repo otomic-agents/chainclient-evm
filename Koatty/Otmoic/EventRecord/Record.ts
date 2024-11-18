@@ -35,7 +35,7 @@ export class Record {
         })
         SystemBus.emittery.on("transaction_send_failed", async (payload: any) => {
             try {
-                await this.onSendTransaction(payload);
+                await this.onSendTransactionFailed(payload);
             } catch (error) {
                 Logger.error(error);
             }

@@ -6,7 +6,11 @@ const dayjs = require("dayjs");
 dayjs.extend(utc);
 dayjs.extend(timezone);
 import copy from 'fast-copy';
-const log: Logger<ILogObj> = new Logger({ prettyLogTimeZone: "UTC" });
+const log: Logger<ILogObj> = new Logger({
+  prettyLogTimeZone: "UTC",
+  stylePrettyLogs: false,
+  prettyLogTemplate: "[{{yyyy}}-{{mm}}-{{dd}} {{hh}}:{{MM}}:{{ss}}.{{ms}} +00:00] {{filePathWithLine}}: ",
+});
 log.settings.minLevel = parseInt(_.get(process, "env.LOG_LEVEL", "3"))
 import { timeout } from "async";
 const axios = require('axios');

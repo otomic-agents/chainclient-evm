@@ -119,6 +119,7 @@ export default class TransactionCheckLoop {
       firstTransactionData.transactionHash = transactionSended.hash;
       firstTransactionData.sended = transactionSended;
       await this.transactionManager.onTransactionNowSucceed(firstTransactionData);
+      SystemBus.sendAction({ action: "transaction_send", payload: _.clone(firstTransactionData) });
       this.currentFailNum = 0;
     } catch (err) {
       this.handleTransactionError(err, firstTransactionData);
