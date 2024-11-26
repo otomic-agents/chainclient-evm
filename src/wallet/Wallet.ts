@@ -88,7 +88,6 @@ export default class Wallet {
     //log wallet info & check walletSecrets format
     walletSecrets.forEach((element: any) => {
       console.log(`set wallet:`)
-      console.log(element)
     })
 
     if (this.redis == undefined) throw new Error('db state error')
@@ -106,7 +105,6 @@ export default class Wallet {
   }
 
   getAddress = async (wallet_name: string) => {
-    console.log(wallet_name, this.walletSecrets)
     if (this.walletSecrets == null || this.walletSecrets == undefined || typeof this.walletSecrets === 'string') {
       throw new Error('state error, no wallet in chainclient')
     }
@@ -270,7 +268,7 @@ export default class Wallet {
     if (this.walletSecrets[0] == undefined) {
       throw new Error('no secret')
     } else {
-      console.log(JSON.stringify(this.walletSecrets[0] as any))
+      // console.log(JSON.stringify(this.walletSecrets[0] as any))
       return (this.walletSecrets[0] as any).web3Wallet.address
     }
   }

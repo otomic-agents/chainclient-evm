@@ -79,8 +79,8 @@ export const getKey = (name: string) => new Promise<string>(async (resolve, reje
             'X-Access-Token': await accessToken()
         }
     }, (err: any, resp: any) => {
-        console.log('error:', err)
-        console.log('get key response resp:', resp?.body)
+        // console.log('error:', err)
+        // console.log('get key response resp:', resp?.body)
 
         if (err == null && resp.body && resp.body.data && resp.body.data.data && resp.body.data.data.value) {
             resolve(resp.body.data.data.value);
