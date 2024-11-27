@@ -50,11 +50,11 @@ export interface WalletConfig {
     wallet_name: string
     address: string
     type: string
-    web3Wallet: ethers.Wallet
     private_key: string
     secert_id: string
     token_list: string[]
     can_sign_712: boolean
+    signature_service_address: string,
 }
 
 export interface CommandTransfer {

@@ -30,6 +30,7 @@ import { HttpRpcClient } from "./serverUtils/HttpRpcClient";
 import { MonitorManager } from "./monitor/MonitorManager";
 import { ApiForStatus } from "./api/ApiForStatus";
 import ApiChain from "./api/ApiChain";
+import { idLogger } from "./utils/IdLog";
 
 export default class ChainClientEVM {
     router: Router | undefined;
@@ -234,24 +235,32 @@ export default class ChainClientEVM {
         if (this.router == undefined) {
             throw new Error("start server error: router undefined");
         }
-
+        async function customLogger(ctx: any, next: any) {
+            const start = Date.now();
+            await idLogger.runWithIdInc(async () => {
+                try {
+                    idLogger.info(`<-- ${ctx.method} ${ctx.url}`);
+                    await next();
+                    const ms = Date.now() - start;
+                    idLogger.info(`--> ${ctx.method} ${ctx.url} ${ctx.status} ${ms}ms`);
+                } catch (error) {
+                    ctx.status = error.statusCode || error.status || 500;
+                    ctx.body = error.message;
+                    idLogger.error('Error handling request:', error);
+                    const ms = Date.now() - start;
+                    idLogger.info(`--> ${ctx.method} ${ctx.url} ${ctx.status} ${ms}ms`);
+                }
+            });
+        }
         const app = new Koa();
         app.context.monitor = this.monitor;
         app.context.wallet = this.wallet;
         app.context.transactionManager = this.transactionManager;
         app.context.config = Config;
         app.context.rpcClient = this.evmRpcClient;
-
+        app.use(idLogger.createAsyncContextMiddleware())
         app.use(bodyParser({}));
-        app.use(async (ctx, next) => {
-            SystemOut.info(`${ctx.request.method} ${ctx.request.url} Start`)
-            const start: any = new Date();
-            await next();
-            const end: any = new Date();
-            const duration = (end - start) / 1000;
-
-            SystemOut.info(`${ctx.request.method} ${ctx.request.url} End ${duration.toFixed(2)} seconds`);
-        });
+        app.use(customLogger);
         app.use(this.router.routes()).use(this.router.allowedMethods());
         app.listen(Config.server_config.port);
 

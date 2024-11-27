@@ -7,15 +7,17 @@ import { SystemBus } from "../bus/bus";
 import { throttledLog } from "../utils/comm";
 const LOOP_STATUS_LOG = new throttledLog();
 import { BigNumber, BigNumberish } from "ethers";
+
 import * as _ from "lodash";
 import {
   EvmConfig,
   EvmRpcClient,
   TransactionRequestCC,
+  WalletConfig,
 } from "../interface/interface";
 import { SystemOut } from "../utils/systemOut";
 import { ethers } from "ethers";
-import VaultSigner from "./VaultSigner";
+import axios from "axios";
 const { dev, vault } = Config;
 const MAX_MESSAGE = 10;
 interface ErrorEntry {
@@ -32,8 +34,7 @@ export default class TransactionCheckLoop {
   private evmConfig: EvmConfig;
   private currentFailNum: number;
   private errorMessage: ErrorEntry[] = [];
-  @Inject()
-  private vaultSigner: VaultSigner;
+
   public init(wallet: Wallet, transactionManager: TransactionManager, evmRpcClient: EvmRpcClient, evmConfig: EvmConfig) {
     this.wallet = wallet;
     this.transactionManager = transactionManager;
@@ -110,11 +111,7 @@ export default class TransactionCheckLoop {
       await this.estimateGas(provider, firstTransaction);
 
       let transactionSended;
-      if ((dev.dev && dev.dev_sign) || (await this.wallet.isVault(firstTransaction.from))) {
-        transactionSended = await this.handleVaultTransaction(firstTransaction, provider);
-      } else {
-        transactionSended = await this.handleKeyAccountTransaction(firstTransaction, provider);
-      }
+      transactionSended = await this.handleKeyAccountTransaction(firstTransaction, provider);
       SystemOut.info(`Transaction sent successfully. TxHash: ${transactionSended.hash},🛍️ bid: ${_.get(firstTransactionData, "rawData.bid", "")}`);
       firstTransactionData.transactionHash = transactionSended.hash;
       firstTransactionData.sended = transactionSended;
@@ -148,36 +145,22 @@ export default class TransactionCheckLoop {
       this.currentFailNum = 0;
     }
   }
-  private async handleVaultTransaction(lfirst: TransactionRequestCC, provider: ethers.providers.JsonRpcProvider): Promise<ethers.providers.TransactionResponse> {
-    SystemOut.info("🪰 Handling vault transaction");
-    const nonce = await provider.getTransactionCount(lfirst.from);
-    lfirst.nonce = nonce;
 
-    const secretId = await this.wallet.getWallet(lfirst.from);
-    if (secretId === undefined) {
-      throw new Error("state error secret_id undefined");
-    }
-
-    const signed = await this.vaultSigner.vaultSign(lfirst, this.evmConfig, secretId as string);
-    const transactionSended = await provider.sendTransaction(signed as string);
-    try {
-      await Promise.race([transactionSended.wait(2), new Promise((_, reject) => setTimeout(() => reject(new Error('Transaction timed out')), 60000))]);
-      SystemOut.info('Transaction confirmed:', transactionSended.hash);
-      return transactionSended; // Assuming transactionSended.hash contains the transaction hash
-    } catch (error) {
-      throw new Error(`Send transaction error: ${error.toString()}`);
-    }
-  }
   private async handleKeyAccountTransaction(firstTransaction: TransactionRequestCC, provider: ethers.providers.JsonRpcProvider): Promise<ethers.providers.TransactionResponse> {
     SystemOut.info("🪰 Handling key account transaction");
-    let client = await this.wallet.getWallet(firstTransaction.from);
-    if (client === undefined) {
-      throw new Error("client undefined");
+    let wallet = await this.wallet.getWalletItemByAddress(firstTransaction.from);
+    if (wallet === undefined) {
+      throw new Error("wallet not found");
     }
-
-    client = (client as ethers.Wallet).connect(provider);
-    const transactionSended = await client.sendTransaction(firstTransaction as TransactionRequest);
-
+    const tx: any = firstTransaction as TransactionRequest;
+    delete tx.from;
+    tx.gasPrice = ethers.BigNumber.from(tx.gasPrice)
+    console.log(tx)
+    tx.nonce = await provider.getTransactionCount(wallet.address)
+    const unsignedTx = ethers.utils.serializeTransaction(tx);
+    SystemOut.debug(`unsignedTx:`, unsignedTx);
+    const signedTx = await this.signTx(wallet, unsignedTx);
+    const transactionSended = await provider.sendTransaction(signedTx);
     try {
       await Promise.race([transactionSended.wait(2), new Promise((_, reject) => setTimeout(() => reject(new Error('Transaction timed out')), 60000))]);
       SystemOut.info('🟩 Transaction confirmed:', transactionSended.hash);
@@ -186,6 +169,20 @@ export default class TransactionCheckLoop {
       SystemOut.info("🟥 Transaction send failed")
       throw new Error(`Send transaction error: ${error.toString()}`);
     }
+  }
+  private async signTx(wallet: WalletConfig, unsignedTx: string): Promise<string> {
+    const url = `${wallet.signature_service_address}/signTx`
+    let signData = ""
+    SystemOut.debug("send tx sign", url)
+    try {
+      const signResponse = await axios.post(url, {
+        txData: unsignedTx
+      })
+      signData = _.get(signResponse, "data.signedTx", "")
+    } catch (e) {
+
+    }
+    return signData
   }
   private async checkSufficientBalanceAndApproval(firstTransactionData: TransactionRequestCC, provider: ethers.providers.JsonRpcProvider): Promise<boolean> {
     SystemOut.info("🪰 Checking if approval is needed");

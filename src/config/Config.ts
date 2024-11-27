@@ -114,11 +114,12 @@ export default {
             account_id: '',
             address: process.env.RELAY_WALLET_ADDRESS,
             can_sign_712: true,
-            private_key: process.env.RELAY_WALLET_PRIVATE_KEY,
+            private_key: "",
             token_list: [],
             type: 'key',
             vault_host_type: '',
             vault_name: '',
+            signature_service_address: process.env.RELAY_SIGNING_SERVICE_URL,
             vault_secert_type: '',
             wallet_name: 'RelayWallet'
         }
