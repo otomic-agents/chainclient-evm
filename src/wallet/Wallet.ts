@@ -5,6 +5,7 @@ import { SystemOut } from '../utils/systemOut'
 import { ISignBase } from '../interface/wallet'
 import axios from 'axios';
 import * as _ from "lodash";
+import Config from '../config/Config'
 const CACHE_KEY_walletSecrets = 'CACHE_KEY_LP_walletSecrets'
 
 interface TokenDictionary {
@@ -216,7 +217,7 @@ export default class Wallet {
   private async getSignFromSignService(walletItem: WalletConfig, baseData: ISignBase, signData: any): Promise<string> {
     let signStr = ""
     try {
-      const url = `${walletItem.signature_service_address}/sign712`
+      const url = `${walletItem.signature_service_address}/lp/${Config.evm_config.system_chain_id}/sign712`
       const signResponse = await axios.post(url, {
         domain: baseData.domain,
         types: baseData.typedData.types,

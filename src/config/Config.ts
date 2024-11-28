@@ -109,6 +109,12 @@ export default {
         SERVER_URL: process.env.OS_SYSTEM_SERVER,
         
     },
+    isRelay: () => {
+        if (process.env.RELAY_WALLET=="true"){
+            return true
+        }  
+        return false
+    },
     relay_wallet : [
         {
             account_id: '',

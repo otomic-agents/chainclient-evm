@@ -171,7 +171,11 @@ export default class TransactionCheckLoop {
     }
   }
   private async signTx(wallet: WalletConfig, unsignedTx: string): Promise<string> {
-    const url = `${wallet.signature_service_address}/signTx`
+    let signType = "lp"
+    if (Config.isRelay() == true) {
+      signType = "relay"
+    }
+    const url = `${wallet.signature_service_address}/${signType}/${Config.evm_config.system_chain_id}/signTx`
     let signData = ""
     SystemOut.debug("send tx sign", url)
     try {
