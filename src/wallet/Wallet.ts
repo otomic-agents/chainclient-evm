@@ -36,16 +36,15 @@ export default class Wallet {
     this.provider = new ethers.providers.JsonRpcProvider(evmConfig.rpc_url)
     this.tokenMap = {}
     const walletsCacheKey: string = `${CACHE_KEY_walletSecrets}_${evmConfig.system_chain_id}`;
-    SystemOut.debug("wallet cached key==", walletsCacheKey)
+    SystemOut.debug("wallet cached key ==", walletsCacheKey)
     const cachedSecretsStr = await this.redis.get(walletsCacheKey)
     if (!cachedSecretsStr) {
       this.walletSecrets == undefined
       SystemOut.warn("walletSecrets is empty")
       return;
     }
-
-    this.walletSecrets = JSON.parse(cachedSecretsStr)
     try {
+      this.walletSecrets = JSON.parse(cachedSecretsStr)
       await this.syncBalance()
     } catch (error) {
       console.error('set config syscBalance error:', error)
@@ -78,18 +77,19 @@ export default class Wallet {
   public getSignatureServiceAddress(address: string): string {
     const result = _.find(this.walletSecrets, (wallet) => wallet.address.toLowerCase() === address.toLocaleLowerCase());
     if (!result) {
-      SystemOut.warn("SignatureServiceAddress not found")
-      return ""
+      SystemOut.warn("⚠️ SignatureServiceAddress not found");
+      return "";
     }
-    return result.signature_service_address
+    return result.signature_service_address;
   }
+
   public getSignatureServiceAddressByWalletName(walletName: string): string {
     const result = _.find(this.walletSecrets, (wallet) => wallet.wallet_name.toLowerCase() === walletName.toLocaleLowerCase());
     if (!result) {
-      SystemOut.warn("SignatureServiceAddress not found")
-      return ""
+      SystemOut.warn("⚠️ SignatureServiceAddress not found");
+      return "";
     }
-    return result.signature_service_address
+    return result.signature_service_address;
   }
 
   getAddress = async (wallet_name: string) => {
@@ -99,7 +99,9 @@ export default class Wallet {
 
     let address: string | undefined = undefined
     this.walletSecrets.forEach((wallet) => {
-      address = wallet.address
+      if (wallet.wallet_name == wallet_name) {
+        address = wallet.address
+      }
     })
     return address
   }
@@ -217,7 +219,7 @@ export default class Wallet {
   private async getSignFromSignService(walletItem: WalletConfig, baseData: ISignBase, signData: any): Promise<string> {
     let signStr = ""
     try {
-      const url = `${walletItem.signature_service_address}/lp/${Config.evm_config.system_chain_id}/sign712`
+      const url = `${walletItem.signature_service_address}/lp/${Config.evm_config.system_chain_id}/signEIP712`
       const signResponse = await axios.post(url, {
         domain: baseData.domain,
         types: baseData.typedData.types,
@@ -228,6 +230,7 @@ export default class Wallet {
       signStr = responseData
     } catch (e) {
       SystemOut.error(e)
+      throw e;
     }
     return signStr
   }
@@ -235,13 +238,14 @@ export default class Wallet {
   getStatus = async () => {
     return this.wallet_info
   }
-
+  /**
+   * By default, relay uses the first wallet
+   * @returns 
+   */
   getRelayAddress = async () => {
     if (this.walletSecrets[0] == undefined) {
       throw new Error('no secret')
-    } else {
-      // console.log(JSON.stringify(this.walletSecrets[0] as any))
-      return (this.walletSecrets[0] as any).web3Wallet.address
     }
+    return this.walletSecrets[0].address
   }
 }
