@@ -243,6 +243,7 @@ export default class Wallet {
    * @returns 
    */
   getRelayAddress = async () => {
+    console.log("getRelayAddress:", this.walletSecrets);
     if (this.walletSecrets[0] == undefined) {
       throw new Error('no secret')
     }
