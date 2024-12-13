@@ -184,7 +184,8 @@ export default class TransactionCheckLoop {
       })
       signData = _.get(signResponse, "data.signedTx", "")
     } catch (e) {
-
+      console.log(e.toString())
+      SystemOut.error("sign error:", e);
     }
     return signData
   }
