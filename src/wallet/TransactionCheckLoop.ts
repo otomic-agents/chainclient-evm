@@ -198,7 +198,7 @@ export default class TransactionCheckLoop {
       const walletInfos = await this.wallet.getWalletInfo();
       SystemOut.info(walletInfos);
       const tokenStr = ethers.BigNumber.from(firstTransactionData.rawData.token).toHexString();
-      if (tokenStr === "0x0") {
+      if (tokenStr === "0x00") {
         SystemOut.info("Token is 0 (native coin), skipping approval check.");
         return false;
       }
