@@ -194,7 +194,14 @@ export default class TransactionCheckLoop {
     try {
       SystemOut.info("source data:")
       SystemOut.info(firstTransactionData)
+
       const walletInfos = await this.wallet.getWalletInfo();
+      SystemOut.info(walletInfos);
+      const tokenStr = ethers.BigNumber.from(firstTransactionData.rawData.token).toHexString();
+      if (tokenStr === "0x0") {
+        SystemOut.info("Token is 0 (native coin), skipping approval check.");
+        return false;
+      }
       const token = ethers.BigNumber.from(firstTransactionData.rawData.token).toHexString();
       const wallet = walletInfos.filter((info) => {
         return (
