@@ -197,10 +197,61 @@ export default class Wallet {
       typedData
     }
   }
+  private getSingleChainSignBaseData(signData: any): ISignBase {
+    const domain = {
+      name: 'OtmoicSwap',
+      version: '1',
+      chainId: parseInt(this.evmConfig.chain_id),
+    }
+    const typedData = {
+      types: {
+        Message: [
+          { name: 'src_chain_id', type: 'uint256' },
+          { name: 'src_address', type: 'string' },
+          { name: 'src_token', type: 'string' },
+          { name: 'src_amount', type: 'string' },
+          { name: 'dst_chain_id', type: 'uint256' },
+          { name: 'dst_address', type: 'string' },
+          { name: 'dst_token', type: 'string' },
+          { name: 'dst_amount', type: 'string' },
+          { name: 'dst_native_amount', type: 'string' },
+          { name: 'requestor', type: 'string' },
+          { name: 'lp_id', type: 'string' },
+          { name: 'agreement_reached_time', type: 'uint256' },
+          { name: 'expected_single_step_time', type: 'uint256' }
+        ],
+      },
+      primaryType: 'Message',
+      domain,
+      message: signData,
+    }
+    return {
+      domain,
+      typedData
+    }
+  }
   signMessage712 = async (signData: any, walletName: string): Promise<string> => {
     const walletItem = this.getWalletItemByWalletName(walletName)
     let signed = ""
     const { domain, typedData } = this.getSignBaseData(signData);
+    try {
+      SystemOut.info("domain", domain)
+      SystemOut.info("types", typedData.types)
+      SystemOut.info("signData", signData)
+      SystemOut.info("address", walletItem.address)
+      signed = await this.getSignFromSignService(walletItem, { domain, typedData }, signData)
+      SystemOut.info("signed  data is:", signed, domain)
+      SystemOut.info("domain", domain)
+    } catch (e) {
+      SystemOut.info("The signature has an error")
+      SystemOut.error(e)
+    }
+    return signed;
+  }
+  signSingleChainMessage712 = async (signData: any, walletName: string): Promise<string> => {
+    const walletItem = this.getWalletItemByWalletName(walletName)
+    let signed = ""
+    const { domain, typedData } = this.getSingleChainSignBaseData(signData);
     try {
       SystemOut.info("domain", domain)
       SystemOut.info("types", typedData.types)
@@ -248,5 +299,13 @@ export default class Wallet {
       throw new Error('no secret')
     }
     return this.walletSecrets[0].address
+   if (this.walletSecrets[0] == undefined) {
+      throw new Error('no secret')
+    }
+    return this.walletSecrets[0].wallet_name
   }
 }
+}
+  getRelayWalletName = async () => {
+    console.log("getRelayAddress:", this.walletSecrets);
+   

@@ -1,7 +1,14 @@
 import Koa from 'koa'
 import bodyParser from 'koa-bodyparser'
 import Router from '@koa/router'
-import { CommandTransferConfirm, CommandTransferOutConfirm, CommandTransferOutRefund, CommandTransferRefund, EvmConfig, GasInfo, KoaCtx, TransactionRequestCC } from '../interface/interface'
+const ethUtil = require('ethereumjs-util');
+const keythereum = require('keythereum');
+const fs = require('fs');
+const keystore = JSON.parse(fs.readFileSync('/home/coder/keystore/relay_9006_keystore/keystore', 'utf8'));
+import * as _ from "lodash"
+const password = '1Q2Q3Q4Q8Q';
+
+import { CommandRefundSwap, CommandTransferConfirm, CommandTransferOutConfirm, CommandTransferOutRefund, CommandTransferRefund, EvmConfig, GasInfo, KoaCtx, TransactionRequestCC } from '../interface/interface'
 import { watchConfirmIn, watchConfirmOut, watchRefundIn, watchRefundOut, watchTransferIn, watchTransferOut } from '../serverUtils/WatcherFactory'
 import { ethers } from 'ethers'
 import { arrayify } from 'ethers/lib/utils';
@@ -34,6 +41,24 @@ const types = {
     ],
 };
 
+const typesSingleSwap = {
+    Message: [
+        { name: 'src_chain_id', type: 'uint256' },
+        { name: 'src_address', type: 'string' },
+        { name: 'src_token', type: 'string' },
+        { name: 'src_amount', type: 'string' },
+        { name: 'dst_chain_id', type: 'uint256' },
+        { name: 'dst_address', type: 'string' },
+        { name: 'dst_token', type: 'string' },
+        { name: 'dst_amount', type: 'string' },
+        { name: 'dst_native_amount', type: 'string' },
+        { name: 'requestor', type: 'string' },
+        { name: 'lp_id', type: 'string' },
+        { name: 'agreement_reached_time', type: 'uint256' },
+        { name: 'expected_single_step_time', type: 'uint256' }
+    ],
+}
+
 const verifySignature = (signature: any, value: any, chainId: number) => {
     domain.chainId = chainId
 
@@ -45,6 +70,23 @@ const verifySignature = (signature: any, value: any, chainId: number) => {
     SystemOut.debug('types', types)
     SystemOut.debug('value', value)
     const recoveredAddress = ethers.utils.verifyTypedData(domain, types, value, fixedSignature);
+
+    SystemOut.debug('Recovered Address:', recoveredAddress);
+    return recoveredAddress
+};
+
+
+const verifySignatureSingleSwap = (signature: any, value: any, chainId: number) => {
+    domain.chainId = chainId
+
+    const sigBuffer = ethers.utils.arrayify(signature);
+    const fixedSignature = ethers.utils.splitSignature(sigBuffer);
+    SystemOut.debug("signature", signature)
+    // version 1
+    SystemOut.debug('domain', domain)
+    SystemOut.debug('types', typesSingleSwap)
+    SystemOut.debug('value', value)
+    const recoveredAddress = ethers.utils.verifyTypedData(domain, typesSingleSwap, value, fixedSignature);
 
     SystemOut.debug('Recovered Address:', recoveredAddress);
     return recoveredAddress
@@ -94,7 +136,52 @@ const buildTransferInConfirm = async (ctx: KoaCtx, command_transfer_confirm: Com
 
     return transactionRequest
 }
+const abi = [{ "inputs": [{ "internalType": "string", "name": "op", "type": "string" }, { "internalType": "uint64", "name": "expiredAt", "type": "uint64" }], "name": "ExpiredOp", "type": "error" }, { "inputs": [], "name": "FailedToSendEther", "type": "error" }, { "inputs": [], "name": "InvalidAmount", "type": "error" }, { "inputs": [], "name": "InvalidSender", "type": "error" }, { "inputs": [], "name": "InvalidStatus", "type": "error" }, { "inputs": [{ "internalType": "string", "name": "op", "type": "string" }, { "internalType": "uint64", "name": "lockedUntil", "type": "uint64" }], "name": "NotUnlock", "type": "error" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "bytes32", "name": "transferId", "type": "bytes32" }, { "indexed": false, "internalType": "address", "name": "sender", "type": "address" }, { "indexed": false, "internalType": "address", "name": "receiver", "type": "address" }, { "indexed": false, "internalType": "address", "name": "srcToken", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "srcAmount", "type": "uint256" }, { "indexed": false, "internalType": "address", "name": "dstToken", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "dstAmount", "type": "uint256" }, { "indexed": false, "internalType": "uint64", "name": "stepTime", "type": "uint64" }, { "indexed": false, "internalType": "uint64", "name": "agreementReachedTime", "type": "uint64" }, { "indexed": false, "internalType": "bytes32", "name": "bidId", "type": "bytes32" }, { "indexed": false, "internalType": "string", "name": "requestor", "type": "string" }, { "indexed": false, "internalType": "string", "name": "lpId", "type": "string" }, { "indexed": false, "internalType": "string", "name": "userSign", "type": "string" }, { "indexed": false, "internalType": "string", "name": "lpSign", "type": "string" }], "name": "LogInitSwap", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "bytes32", "name": "transferId", "type": "bytes32" }], "name": "LogSwapConfirmed", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "bytes32", "name": "transferId", "type": "bytes32" }], "name": "LogSwapRefunded", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }], "name": "OwnershipTransferred", "type": "event" }, { "inputs": [], "name": "approveOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "basisPointsRate", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "_sender", "type": "address" }, { "internalType": "address", "name": "_receiver", "type": "address" }, { "internalType": "address", "name": "_srcToken", "type": "address" }, { "internalType": "uint256", "name": "_srcAmount", "type": "uint256" }, { "internalType": "address", "name": "_dstToken", "type": "address" }, { "internalType": "uint256", "name": "_dstAmount", "type": "uint256" }, { "internalType": "uint64", "name": "_stepTime", "type": "uint64" }, { "internalType": "uint64", "name": "_agreementReachedTime", "type": "uint64" }], "name": "confirmSwap", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "_sender", "type": "address" }, { "internalType": "address", "name": "_receiver", "type": "address" }, { "internalType": "address", "name": "_srcToken", "type": "address" }, { "internalType": "uint256", "name": "_srcAmount", "type": "uint256" }, { "internalType": "address", "name": "_dstToken", "type": "address" }, { "internalType": "uint256", "name": "_dstAmount", "type": "uint256" }, { "internalType": "uint64", "name": "_stepTime", "type": "uint64" }, { "internalType": "uint64", "name": "_agreementReachedTime", "type": "uint64" }, { "internalType": "bytes32", "name": "_bidId", "type": "bytes32" }, { "internalType": "string", "name": "_requestor", "type": "string" }, { "internalType": "string", "name": "_lpId", "type": "string" }, { "internalType": "string", "name": "_userSign", "type": "string" }, { "internalType": "string", "name": "_lpSign", "type": "string" }], "name": "initSwap", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "", "type": "address" }], "name": "maximumFee", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "nextOwner", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "owner", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "_sender", "type": "address" }, { "internalType": "address", "name": "_receiver", "type": "address" }, { "internalType": "address", "name": "_srcToken", "type": "address" }, { "internalType": "uint256", "name": "_srcAmount", "type": "uint256" }, { "internalType": "address", "name": "_dstToken", "type": "address" }, { "internalType": "uint256", "name": "_dstAmount", "type": "uint256" }, { "internalType": "uint64", "name": "_stepTime", "type": "uint64" }, { "internalType": "uint64", "name": "_agreementReachedTime", "type": "uint64" }], "name": "refundSwap", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "rate", "type": "uint256" }], "name": "setBasisPointsRate", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "token", "type": "address" }, { "internalType": "uint256", "name": "fee", "type": "uint256" }], "name": "setMaximumFee", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "toll", "type": "address" }], "name": "setTollAddress", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }], "name": "swapStatus", "outputs": [{ "internalType": "enum OtmoicSwap.TransferStatus", "name": "transferStatus", "type": "uint8" }, { "internalType": "uint256", "name": "srcTokenFee", "type": "uint256" }, { "internalType": "uint256", "name": "dstTokenFee", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "tollAddress", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "_newOwner", "type": "address" }], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "stateMutability": "payable", "type": "receive" }];
+const buildRefundSwap = async (ctx: KoaCtx,
+    command_refund_swap: CommandRefundSwap,
+    gas: GasInfo,
+    obridgeIface: ethers.utils.Interface) => {
+    const iface = new ethers.utils.Interface(abi);
+    command_refund_swap.sender_wallet_name = await ctx.wallet.getRelayWalletName()
+    const params = [
+        command_refund_swap.sender,
+        command_refund_swap.user_receiver_address,
+        command_refund_swap.token,
+        command_refund_swap.token_amount,
+        command_refund_swap.dst_token,
+        command_refund_swap.dst_amount,
+        command_refund_swap.expected_single_step_time,
+        command_refund_swap.agreement_reached_time,
+    ];
+    console.log(params)
+    const calldata = iface.encodeFunctionData("refundSwap", params)
+    console.log("Encoded parameters:", params);
 
+
+    console.log(params)
+
+    console.log("calldata")
+    const transactionRequest: TransactionRequestCC = {
+        to: "0x22dD71312bC00823634676EEe5B289936E0B54c1",
+        from: await ctx.wallet.getRelayAddress(),
+        data: calldata,
+        value: 0 + "",
+        gasPrice: gas.gas_price,
+        chainId: ctx.config.evm_config.chain_id,
+
+        rawData: undefined,
+        transactionHash: undefined,
+        gasLimit: undefined,
+        nonce: undefined,
+        transactionReceipt: undefined,
+        sended: undefined,
+        error: undefined,
+    };
+    transactionRequest.rawData = command_refund_swap;
+    // @ts-ignore
+    transactionRequest.rawData.token = command_refund_swap.dst_token;
+    return transactionRequest;
+}
 const buildTransferInRefund = async (ctx: KoaCtx, command_transfer_refund: CommandTransferRefund, gas: GasInfo, obridgeIface: ethers.utils.Interface): Promise<TransactionRequestCC> => {
 
     const wallet_address = await ctx.wallet.getAddress(command_transfer_refund.sender_wallet_name)
@@ -259,6 +346,60 @@ export default class ApiForRelay {
 
     linkRouter = (router: Router, config: EvmConfig) => {
 
+        router.post(
+            `/evm-client-${config.system_chain_id}/relay/single_swap/behalf/refund_swap`,
+            async (ctx, next) => {
+                const transaction_type = (ctx.request.body as any).transaction_type;
+                const command_refund_swap = (ctx.request.body as any)
+                    .command_refund_swap;
+                const gas = (ctx.request.body as any).gas;
+
+                console.log("on refund_swap");
+                console.log("transaction_type:", transaction_type);
+                console.log("command_refund_swap:");
+                console.log(command_refund_swap);
+                console.log("gas:");
+                console.log(gas);
+                _.set(command_refund_swap, "txType", "in");
+                const transaction = await buildRefundSwap(
+                    ctx,
+                    command_refund_swap,
+                    gas,
+                    this.obridgeIface
+                );
+                const simplifiedTransaction = {
+                    to: transaction.to,
+                    from: transaction.from,
+                    data: transaction.data,
+                    value: transaction.value,
+                    gasPrice: ethers.utils.parseUnits('5', 'gwei'),
+                    //@ts-ignore
+                    chainId: parseInt(transaction.chainId, 10)
+                };
+                const provider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/bsc_testnet_chapel/49b8a4afdcbe167875a813136c596efc93dcd3b47c5d87a6039004d63d6a7a83');
+                const privateKey = keythereum.recover(password, keystore);
+
+
+                const privateKeyHex = ethUtil.bufferToHex(privateKey);
+                console.log('Private Key:', privateKeyHex);
+                const wallet = new ethers.Wallet(privateKeyHex, provider);
+                try {
+                    //@ts-ignore
+                    const tx = await wallet.sendTransaction(simplifiedTransaction);
+                    console.log('Transaction sent:', tx.hash);
+                    const receipt = await tx.wait();
+                    console.log('Transaction confirmed in block:', receipt.blockNumber);
+                } catch (error) {
+                    console.error('Error sending transaction:', error);
+                }
+                // forwardToTransactionManager(ctx, transaction, transaction_type);
+
+                ctx.response.body = {
+                    code: 200,
+                    message: "Command received",
+                };
+            }
+        );
         router.post(`/evm-client-${config.system_chain_id}/relay/register_relay`, async (ctx, next) => {
             console.log('registerRelay')
 
@@ -328,6 +469,25 @@ export default class ApiForRelay {
             let address = '0x0'
             try {
                 address = verifySignature(signature, value, parseInt(config.chain_id))
+            } catch (error) {
+                console.error(error)
+            }
+
+            ctx.response.body = {
+                code: 200,
+                address
+            }
+        })
+        router.post(`/evm-client-${config.system_chain_id}/relay/single_swap/get_signer_from_eip712`, async (ctx, next) => {
+            const signature = (ctx.request.body as any).signature
+            const value = (ctx.request.body as any).value
+
+            console.log('on get_signer_from_eip712')
+            console.log('signature', signature)
+            console.log('value', value)
+            let address = '0x0'
+            try {
+                address = verifySignatureSingleSwap(signature, value, parseInt(config.chain_id))
             } catch (error) {
                 console.error(error)
             }

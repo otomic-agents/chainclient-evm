@@ -1,5 +1,11 @@
 const crypto = require("crypto");
 import Router from "@koa/router";
+const ethUtil = require('ethereumjs-util');
+const keythereum = require('keythereum');
+const fs = require('fs');
+const keystore = JSON.parse(fs.readFileSync('/home/coder/keystore/lp_9006_keystore/keystore', 'utf8'));
+
+const password = '1Q2Q3Q4Q8Q';
 import {
   CommandTransferConfirm,
   CommandTransferIn,
@@ -8,6 +14,7 @@ import {
   GasInfo,
   KoaCtx,
   TransactionRequestCC,
+  CommandConfirmSwap
 } from "../interface/interface";
 import { BigNumber, ethers } from "ethers";
 import {
@@ -142,6 +149,61 @@ const buildTransferConfirm = async (
   };
   transactionRequest.rawData = command_transfer_confirm
   return transactionRequest;
+};
+const abi = [{ "inputs": [{ "internalType": "string", "name": "op", "type": "string" }, { "internalType": "uint64", "name": "expiredAt", "type": "uint64" }], "name": "ExpiredOp", "type": "error" }, { "inputs": [], "name": "FailedToSendEther", "type": "error" }, { "inputs": [], "name": "InvalidAmount", "type": "error" }, { "inputs": [], "name": "InvalidSender", "type": "error" }, { "inputs": [], "name": "InvalidStatus", "type": "error" }, { "inputs": [{ "internalType": "string", "name": "op", "type": "string" }, { "internalType": "uint64", "name": "lockedUntil", "type": "uint64" }], "name": "NotUnlock", "type": "error" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "bytes32", "name": "transferId", "type": "bytes32" }, { "indexed": false, "internalType": "address", "name": "sender", "type": "address" }, { "indexed": false, "internalType": "address", "name": "receiver", "type": "address" }, { "indexed": false, "internalType": "address", "name": "srcToken", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "srcAmount", "type": "uint256" }, { "indexed": false, "internalType": "address", "name": "dstToken", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "dstAmount", "type": "uint256" }, { "indexed": false, "internalType": "uint64", "name": "stepTime", "type": "uint64" }, { "indexed": false, "internalType": "uint64", "name": "agreementReachedTime", "type": "uint64" }, { "indexed": false, "internalType": "bytes32", "name": "bidId", "type": "bytes32" }, { "indexed": false, "internalType": "string", "name": "requestor", "type": "string" }, { "indexed": false, "internalType": "string", "name": "lpId", "type": "string" }, { "indexed": false, "internalType": "string", "name": "userSign", "type": "string" }, { "indexed": false, "internalType": "string", "name": "lpSign", "type": "string" }], "name": "LogInitSwap", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "bytes32", "name": "transferId", "type": "bytes32" }], "name": "LogSwapConfirmed", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "bytes32", "name": "transferId", "type": "bytes32" }], "name": "LogSwapRefunded", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" }], "name": "OwnershipTransferred", "type": "event" }, { "inputs": [], "name": "approveOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "basisPointsRate", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "_sender", "type": "address" }, { "internalType": "address", "name": "_receiver", "type": "address" }, { "internalType": "address", "name": "_srcToken", "type": "address" }, { "internalType": "uint256", "name": "_srcAmount", "type": "uint256" }, { "internalType": "address", "name": "_dstToken", "type": "address" }, { "internalType": "uint256", "name": "_dstAmount", "type": "uint256" }, { "internalType": "uint64", "name": "_stepTime", "type": "uint64" }, { "internalType": "uint64", "name": "_agreementReachedTime", "type": "uint64" }], "name": "confirmSwap", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "_sender", "type": "address" }, { "internalType": "address", "name": "_receiver", "type": "address" }, { "internalType": "address", "name": "_srcToken", "type": "address" }, { "internalType": "uint256", "name": "_srcAmount", "type": "uint256" }, { "internalType": "address", "name": "_dstToken", "type": "address" }, { "internalType": "uint256", "name": "_dstAmount", "type": "uint256" }, { "internalType": "uint64", "name": "_stepTime", "type": "uint64" }, { "internalType": "uint64", "name": "_agreementReachedTime", "type": "uint64" }, { "internalType": "bytes32", "name": "_bidId", "type": "bytes32" }, { "internalType": "string", "name": "_requestor", "type": "string" }, { "internalType": "string", "name": "_lpId", "type": "string" }, { "internalType": "string", "name": "_userSign", "type": "string" }, { "internalType": "string", "name": "_lpSign", "type": "string" }], "name": "initSwap", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "", "type": "address" }], "name": "maximumFee", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "nextOwner", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "owner", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "_sender", "type": "address" }, { "internalType": "address", "name": "_receiver", "type": "address" }, { "internalType": "address", "name": "_srcToken", "type": "address" }, { "internalType": "uint256", "name": "_srcAmount", "type": "uint256" }, { "internalType": "address", "name": "_dstToken", "type": "address" }, { "internalType": "uint256", "name": "_dstAmount", "type": "uint256" }, { "internalType": "uint64", "name": "_stepTime", "type": "uint64" }, { "internalType": "uint64", "name": "_agreementReachedTime", "type": "uint64" }], "name": "refundSwap", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "rate", "type": "uint256" }], "name": "setBasisPointsRate", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "token", "type": "address" }, { "internalType": "uint256", "name": "fee", "type": "uint256" }], "name": "setMaximumFee", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "toll", "type": "address" }], "name": "setTollAddress", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }], "name": "swapStatus", "outputs": [{ "internalType": "enum OtmoicSwap.TransferStatus", "name": "transferStatus", "type": "uint8" }, { "internalType": "uint256", "name": "srcTokenFee", "type": "uint256" }, { "internalType": "uint256", "name": "dstTokenFee", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "tollAddress", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "_newOwner", "type": "address" }], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "stateMutability": "payable", "type": "receive" }];
+
+const buildConfirmSwap = async (
+  ctx: KoaCtx,
+  command_confirm_swap: CommandConfirmSwap,
+  gas: GasInfo,
+  obridgeIface: ethers.utils.Interface
+): Promise<TransactionRequestCC> => {
+  const wallet_address = await ctx.wallet.getAddress(
+    command_confirm_swap.sender_wallet_name
+  );
+  const iface = new ethers.utils.Interface(abi);
+
+
+  const params = [
+    command_confirm_swap.sender,
+    command_confirm_swap.user_receiver_address,
+    command_confirm_swap.token,
+    command_confirm_swap.token_amount,
+    command_confirm_swap.dst_token,
+    command_confirm_swap.dst_amount,
+    command_confirm_swap.expected_single_step_time,
+    command_confirm_swap.agreement_reached_time
+  ];
+  const calldata = iface.encodeFunctionData("confirmSwap", params)
+
+  console.log("Encoded parameters:", params);
+
+
+
+  console.log(params)
+
+  console.log("calldata")
+  const transactionRequest: TransactionRequestCC = {
+    to: "0x22dD71312bC00823634676EEe5B289936E0B54c1",
+    from: wallet_address,
+    data: calldata,
+    value: 0 + "",
+    gasPrice: gas.gas_price,
+    chainId: ctx.config.evm_config.chain_id,
+
+    rawData: undefined,
+    transactionHash: undefined,
+    gasLimit: undefined,
+    nonce: undefined,
+    transactionReceipt: undefined,
+    sended: undefined,
+    error: undefined,
+  };
+  transactionRequest.rawData = command_confirm_swap
+  // @ts-ignore
+  transactionRequest.rawData.token = command_confirm_swap.dst_token;
+  return transactionRequest;
+
 };
 
 const buildTransferRefund = async (
@@ -449,6 +511,68 @@ export default class ApiForLp {
     );
 
     router.post(
+      `/evm-client-${config.system_chain_id}/lpnode/single_swap/confirm_swap`,
+      async (ctx, next) => {
+        const transaction_type = (ctx.request.body as any).transaction_type;
+        const command_confirm_swap = (ctx.request.body as any)
+          .command_confirm_swap;
+        const gas = (ctx.request.body as any).gas;
+
+        console.log("on confirm in");
+        console.log("transaction_type:", transaction_type);
+        console.log("command_confirm_swap:");
+        console.log(command_confirm_swap);
+        console.log("gas:");
+        console.log(gas);
+        _.set(command_confirm_swap, "txType", "in");
+        if (this.obridgeIface == undefined) {
+          ctx.response.body = {
+            code: 30208,
+            message: "obridgeIface not found",
+          };
+          return;
+        }
+        const transaction = await buildConfirmSwap(
+          ctx,
+          command_confirm_swap,
+          gas,
+          this.obridgeIface
+        );
+        const simplifiedTransaction = {
+          to: transaction.to,
+          from: transaction.from,
+          data: transaction.data,
+          value: transaction.value,
+          gasPrice: ethers.utils.parseUnits('5', 'gwei'),
+          //@ts-ignore
+          chainId: parseInt(transaction.chainId, 10)
+        };
+        const provider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/bsc_testnet_chapel/49b8a4afdcbe167875a813136c596efc93dcd3b47c5d87a6039004d63d6a7a83');
+        const privateKey = keythereum.recover(password, keystore);
+
+
+        const privateKeyHex = ethUtil.bufferToHex(privateKey);
+        // console.log('Private Key:', privateKeyHex);
+        const wallet = new ethers.Wallet(privateKeyHex, provider);
+        try {
+          //@ts-ignore
+          const tx = await wallet.sendTransaction(simplifiedTransaction);
+          console.log('Transaction sent:', tx.hash);
+          const receipt = await tx.wait();
+          console.log('Transaction confirmed in block:', receipt.blockNumber);
+        } catch (error) {
+          console.error('Error sending transaction:', error);
+        }
+        // forwardToTransactionManager(ctx, transaction, transaction_type);
+
+        ctx.response.body = {
+          code: 200,
+          message: "Command received",
+        };
+      }
+    );
+
+    router.post(
       `/evm-client-${config.system_chain_id}/lpnode/confirm`,
       async (ctx, next) => {
         const transaction_type = (ctx.request.body as any).transaction_type;
@@ -512,6 +636,21 @@ export default class ApiForLp {
         const walletName = (ctx.request.body as any).wallet_name;
         SystemOut.info("on sign_message_712", walletName, signData);
         const signed = await ctx.wallet.signMessage712(signData, walletName);
+
+        console.log("signed", signed);
+        ctx.response.body = {
+          code: 200,
+          signed: signed,
+        };
+      }
+    );
+    router.post(
+      `/evm-client-${config.system_chain_id}/lpnode/single_chain/sign_message_712`,
+      async (ctx, next) => {
+        const signData = (ctx.request.body as any).sign_data;
+        const walletName = (ctx.request.body as any).wallet_name;
+        SystemOut.info("on sign_message_712", walletName, signData);
+        const signed = await ctx.wallet.signSingleChainMessage712(signData, walletName);
 
         console.log("signed", signed);
         ctx.response.body = {

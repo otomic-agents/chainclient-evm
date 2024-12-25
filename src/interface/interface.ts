@@ -80,6 +80,33 @@ export interface CommandTransferIn {
     earliest_refund_time: string
 }
 
+export interface CommandConfirmSwap {
+    txType: string
+    bid?: string
+    sender: string
+    sender_wallet_name: string
+    user_receiver_address: string
+    token: string
+    token_amount: string
+    dst_token: string
+    dst_amount: string
+    agreement_reached_time: string
+    expected_single_step_time: string
+}
+export interface CommandRefundSwap {
+    txType: string
+    bid?: string
+    sender: string
+    sender_wallet_name: string
+    user_receiver_address: string
+    token: string
+    token_amount: string
+    dst_token: string
+    dst_amount: string
+    expected_single_step_time: string
+    agreement_reached_time: string
+}
+
 export interface CommandTransferConfirm {
     bid?: string
     sender: string
@@ -146,7 +173,7 @@ export interface TransactionRequestCC {
     from: string
     to: string
     data: string
-    rawData: CommandTransfer | CommandTransferIn | CommandTransferRefund
+    rawData: CommandTransfer | CommandTransferIn | CommandTransferRefund | CommandConfirmSwap | CommandRefundSwap
     chainId: number | string
     transactionHash: string | undefined
     gasPrice: number | string | undefined

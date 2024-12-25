@@ -108,6 +108,7 @@ export default class TransactionCheckLoop {
       }
 
       SystemOut.info("EstimateGas")
+      SystemOut.info("firstTransaction", firstTransaction)
       await this.estimateGas(provider, firstTransaction);
 
       let transactionSended;
