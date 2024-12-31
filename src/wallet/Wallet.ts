@@ -299,13 +299,12 @@ export default class Wallet {
       throw new Error('no secret')
     }
     return this.walletSecrets[0].address
-   if (this.walletSecrets[0] == undefined) {
+  }
+  getRelayWalletName = async (): Promise<any>=> {
+    console.log("getRelayAddress:", this.walletSecrets);
+    if (this.walletSecrets[0] == undefined) {
       throw new Error('no secret')
     }
     return this.walletSecrets[0].wallet_name
   }
 }
-}
-  getRelayWalletName = async () => {
-    console.log("getRelayAddress:", this.walletSecrets);
-   

@@ -390,7 +390,7 @@ export default class ApiForRelay {
                     const receipt = await tx.wait();
                     console.log('Transaction confirmed in block:', receipt.blockNumber);
                 } catch (error) {
-                    console.error('Error sending transaction:', error);
+                    SystemOut.info("Error sending transaction", ctx.path, error)
                 }
                 // forwardToTransactionManager(ctx, transaction, transaction_type);
 

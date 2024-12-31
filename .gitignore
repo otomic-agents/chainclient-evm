@@ -16,3 +16,5 @@ bin/**/*
 bin
 .venv
 relay-env.sh
+lp-result.log
+t.js

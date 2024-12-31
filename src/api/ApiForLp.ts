@@ -179,9 +179,14 @@ const buildConfirmSwap = async (
   console.log("Encoded parameters:", params);
 
 
-
+  let targetIsNativeToken = false;
   console.log(params)
-
+  if (
+    ethers.BigNumber.from(command_confirm_swap.dst_token).toHexString() ==
+    "0x00"
+  ) {
+    targetIsNativeToken = true;
+  }
   console.log("calldata")
   const transactionRequest: TransactionRequestCC = {
     to: "0x22dD71312bC00823634676EEe5B289936E0B54c1",
@@ -199,6 +204,9 @@ const buildConfirmSwap = async (
     sended: undefined,
     error: undefined,
   };
+  if (targetIsNativeToken) {
+    transactionRequest.value = command_confirm_swap.dst_amount;
+  }
   transactionRequest.rawData = command_confirm_swap
   // @ts-ignore
   transactionRequest.rawData.token = command_confirm_swap.dst_token;
