@@ -18,3 +18,4 @@ bin
 relay-env.sh
 lp-result.log
 t.js
+result.log
