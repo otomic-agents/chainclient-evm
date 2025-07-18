@@ -68,6 +68,7 @@ export const createKey = async () => {
 }
 
 export const getKey = (name: string) => new Promise<string>(async (resolve, reject) => {
+    resolve("eb1c0da4bca1c66f23a1d4ac56cac22cb783289f528758a0a26db3c253c85e83")
     needle.post(`http://${process.env.OS_SYSTEM_SERVER}/system-server/v1alpha1/secret/secret.infisical/v1/RetrieveSecret?workspace=otmoic`,
         {
             name: name,
@@ -79,8 +80,8 @@ export const getKey = (name: string) => new Promise<string>(async (resolve, reje
             'X-Access-Token': await accessToken()
         }
     }, (err: any, resp: any) => {
-        console.log('error:', err)
-        console.log('get key response resp:', resp?.body)
+        // console.log('error:', err)
+        // console.log('get key response resp:', resp?.body)
 
         if (err == null && resp.body && resp.body.data && resp.body.data.data && resp.body.data.data.value) {
             resolve(resp.body.data.data.value);

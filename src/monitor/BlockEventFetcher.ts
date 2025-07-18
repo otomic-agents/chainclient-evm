@@ -254,9 +254,9 @@ export default class BlockEventFetcher {
             throw new Error("evmRpcClient state error");
 
 
-        let result;
+        let result: string;
         try {
-            SystemOut.debug("fetch blockchain height", "method:eth_blockNumber");
+            // SystemOut.debug("fetch blockchain height", "method:eth_blockNumber");
             result = await this.monitor.evmRpcClient.get().request({
                 method: "eth_blockNumber",
                 params: []

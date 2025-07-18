@@ -70,6 +70,7 @@ const watchHeight = (callbackUrl: CallbackUrlBox, monitor: Monitor, filteridList
     for (const [key, _] of blockNumberCache) {
       if (key < cursorBlock) {
         try {
+          SystemOut.info("Do Send", key)
           await doSend(key)
         } catch (e) {
           SystemOut.error(e)
@@ -132,6 +133,7 @@ const startHistoryTask = async (startBlock: number, endBlock: number, callbackUr
   const monitorName = `history-${startBlock}_${endBlock}`
   const historyMonitor = MonitorManager.getInst().createMonitor(monitorName)
   MonitorManager.getInst().initMoniterAsHistory(monitorName, client, startBlock, endBlock)
+  historyMonitor.setEvmConfig(config);
   const filterIdList: string[] = []
   const mergeData = watchHeight(callbackUrl, historyMonitor, filterIdList)
 
@@ -149,6 +151,7 @@ const startReputationHistoryTask = async (startBlock: number, endBlock: number, 
   const monitorName = `reputation-history-${startBlock}_${endBlock}`
   const historyMonitor = MonitorManager.getInst().createMonitor(monitorName)
   MonitorManager.getInst().initMoniterAsHistory(monitorName, client, startBlock, endBlock)
+  historyMonitor.setEvmConfig(config);
   const filterIdList: string[] = []
   const mergeData = watchHeight(callbackUrl, historyMonitor, filterIdList)
   filterIdList.push(watchReputation(historyMonitor, callbackUrl.on_reputation, config, merge, mergeData))
@@ -258,7 +261,7 @@ export default class ApiSupport {
           code: 30209,
           message: 'callbackUrl is already registered'
         }
-        SystemOut.debug("callbackUrl is already registered for support endpoind", callbackUrl, merge)
+        SystemOut.warn("callbackUrl is already registered for support endpoind", callbackUrl, merge)
         return
       }
       const filteridList: string[] = []

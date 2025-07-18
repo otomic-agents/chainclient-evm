@@ -50,11 +50,11 @@ export interface WalletConfig {
     wallet_name: string
     address: string
     type: string
-    web3Wallet: ethers.Wallet
     private_key: string
     secert_id: string
     token_list: string[]
     can_sign_712: boolean
+    signature_service_address: string,
 }
 
 export interface CommandTransfer {
@@ -64,19 +64,24 @@ export interface CommandTransfer {
 }
 
 export interface CommandTransferIn {
+    txType: string;
+    bid?: string;
     sender_wallet_name: string
     user_receiver_address: string
     token: string
     token_amount: string
     eth_amount: string
     hash_lock: string
-    step_time_lock: string
     src_chain_id: string
     src_transfer_id: string
     agreement_reached_time: string
+    expected_single_step_time: string
+    tolerant_single_step_time: string
+    earliest_refund_time: string
 }
 
 export interface CommandTransferConfirm {
+    bid?: string
     sender: string
     sender_wallet_name: string
     user_receiver_address: string
@@ -84,9 +89,11 @@ export interface CommandTransferConfirm {
     token_amount: string
     eth_amount: string
     hash_lock: string
-    step_time_lock: string
     preimage: string
     agreement_reached_time: string
+    expected_single_step_time: string
+    tolerant_single_step_time: string
+    earliest_refund_time: string
 }
 
 export interface CommandTransferRefund {
@@ -96,8 +103,10 @@ export interface CommandTransferRefund {
     token_amount: string
     eth_amount: string
     hash_lock: string
-    step_time_lock: string
     agreement_reached_time: string
+    expected_single_step_time: string
+    tolerant_single_step_time: string
+    earliest_refund_time: string
 }
 
 export interface CommandTransferOutConfirm {
@@ -108,10 +117,12 @@ export interface CommandTransferOutConfirm {
     eth_amount: string
     hash_lock: string
     relay_hash_lock: string
-    step_time_lock: string
     preimage: string
     relay_preimage: string
     agreement_reached_time: string
+    expected_single_step_time: string
+    tolerant_single_step_time: string
+    earliest_refund_time: string
 }
 
 export interface CommandTransferOutRefund {
@@ -121,8 +132,10 @@ export interface CommandTransferOutRefund {
     token_amount: string
     eth_amount: string
     hash_lock: string
-    step_time_lock: string
     agreement_reached_time: string
+    expected_single_step_time: string
+    tolerant_single_step_time: string
+    earliest_refund_time: string
 }
 
 export interface GasInfo {
@@ -133,7 +146,7 @@ export interface TransactionRequestCC {
     from: string
     to: string
     data: string
-    rawData: CommandTransfer | undefined
+    rawData: CommandTransfer | CommandTransferIn | CommandTransferRefund
     chainId: number | string
     transactionHash: string | undefined
     gasPrice: number | string | undefined
@@ -142,7 +155,7 @@ export interface TransactionRequestCC {
     nonce: number | undefined
     transactionReceipt: ethers.providers.TransactionReceipt | undefined
     sended: ethers.providers.TransactionResponse | undefined
-    error: any
+    error: any;
 }
 
 export interface BlockFetchTask {

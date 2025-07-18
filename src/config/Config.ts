@@ -109,16 +109,23 @@ export default {
         SERVER_URL: process.env.OS_SYSTEM_SERVER,
         
     },
+    isRelay: () => {
+        if (process.env.RELAY_WALLET=="true"){
+            return true
+        }  
+        return false
+    },
     relay_wallet : [
         {
             account_id: '',
             address: process.env.RELAY_WALLET_ADDRESS,
             can_sign_712: true,
-            private_key: process.env.RELAY_WALLET_PRIVATE_KEY,
+            private_key: "",
             token_list: [],
             type: 'key',
             vault_host_type: '',
             vault_name: '',
+            signature_service_address: process.env.RELAY_SIGNING_SERVICE_URL,
             vault_secert_type: '',
             wallet_name: 'RelayWallet'
         }

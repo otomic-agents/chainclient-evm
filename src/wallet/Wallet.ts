@@ -1,10 +1,11 @@
 import { ethers, BigNumber } from 'ethers'
 import { Redis } from 'ioredis'
 import { EvmConfig, EvmRpcClient, WalletConfig } from '../interface/interface'
-import sleep from '../serverUtils/Sleeper'
-import { getKey } from '../serverUtils/SecretVaultUtils'
 import { SystemOut } from '../utils/systemOut'
-
+import { ISignBase } from '../interface/wallet'
+import axios from 'axios';
+import * as _ from "lodash";
+import Config from '../config/Config'
 const CACHE_KEY_walletSecrets = 'CACHE_KEY_LP_walletSecrets'
 
 interface TokenDictionary {
@@ -25,7 +26,7 @@ export default class Wallet {
   evmConfig: EvmConfig | undefined
   provider: ethers.providers.JsonRpcProvider | undefined
   tokenMap: TokenDictionary | undefined
-  walletSecrets: WalletConfig[] | string | null | undefined
+  private walletSecrets: WalletConfig[]
   wallet_info: TokenBalance[] | undefined
 
   setConfig = async (redis: Redis, evmRpcClient: EvmRpcClient, evmConfig: EvmConfig) => {
@@ -34,66 +35,27 @@ export default class Wallet {
     this.evmConfig = evmConfig
     this.provider = new ethers.providers.JsonRpcProvider(evmConfig.rpc_url)
     this.tokenMap = {}
-
-    this.walletSecrets = await this.redis.get(`${CACHE_KEY_walletSecrets}_${evmConfig.system_chain_id}`)
-    if (this.walletSecrets == undefined) {
+    const walletsCacheKey: string = `${CACHE_KEY_walletSecrets}_${evmConfig.system_chain_id}`;
+    SystemOut.debug("wallet cached key ==", walletsCacheKey)
+    const cachedSecretsStr = await this.redis.get(walletsCacheKey)
+    if (!cachedSecretsStr) {
+      this.walletSecrets == undefined
+      SystemOut.warn("walletSecrets is empty")
+      return;
+    }
+    try {
+      this.walletSecrets = JSON.parse(cachedSecretsStr)
+      await this.syncBalance()
+    } catch (error) {
+      console.error('set config syscBalance error:', error)
       this.walletSecrets = undefined
-    } else {
-      this.walletSecrets = JSON.parse(this.walletSecrets)
-      try {
-        await this.syncBalance()
-      } catch (error) {
-        console.error('set config syscBalance error:', error)
-        this.walletSecrets = undefined
-      }
     }
   }
 
-  isVault = (address: string) =>
-    new Promise<boolean>((resolve) => {
-      if (this.walletSecrets == null || this.walletSecrets == undefined || typeof this.walletSecrets === 'string') {
-        throw new Error('state error, no wallet in chainclient')
-      }
-
-      this.walletSecrets.forEach((wallet) => {
-        if (wallet.type == 'key' || wallet.type == 'secret_vault') {
-          if (wallet.web3Wallet.address.toLowerCase() == address.toLowerCase()) {
-            resolve(false)
-          }
-        } else if (wallet.type == 'vault') {
-          if (wallet.address.toLowerCase() == address.toLowerCase()) {
-            resolve(true)
-          }
-        }
-      })
-    })
-
-  getWallet = async (address: string) => {
-    if (this.walletSecrets == null || this.walletSecrets == undefined || typeof this.walletSecrets === 'string') {
-      throw new Error('state error, no wallet in chainclient')
-    }
-
-    let client: undefined | string | ethers.Wallet = undefined
-    this.walletSecrets.forEach((wallet) => {
-      if ((wallet.type == 'key' || wallet.type == 'secret_vault') && wallet.web3Wallet.address.toLowerCase() == address.toLowerCase()) {
-        client = wallet.web3Wallet
-      } else if (wallet.type == 'vault' && wallet.address.toLowerCase() == address.toLowerCase()) {
-        client = wallet.secert_id
-      }
-    })
-    return client
-  }
-
-  updateWallet = async (walletSecrets: any) => {
-    //log wallet info & check walletSecrets format
-    walletSecrets.forEach((element: any) => {
-      console.log(`set wallet:`)
-      console.log(element)
-    })
-
+  public async updateWallet(walletSecrets: any) {
     if (this.redis == undefined) throw new Error('db state error')
     if (this.evmConfig == undefined) throw new Error('config state error')
-
+    SystemOut.debug(walletSecrets)
     this.redis.set(`${CACHE_KEY_walletSecrets}_${this.evmConfig.system_chain_id}`, JSON.stringify(walletSecrets))
     this.walletSecrets = walletSecrets
   }
@@ -104,19 +66,41 @@ export default class Wallet {
     }
     return this.wallet_info
   }
+  public getWalletItemByWalletName(walletName: string): WalletConfig {
+    const result = _.find(this.walletSecrets, (wallet) => wallet.wallet_name.toLowerCase() === walletName.toLocaleLowerCase());
+    return result;
+  }
+  public getWalletItemByAddress(address: string): WalletConfig {
+    const result = _.find(this.walletSecrets, (wallet) => wallet.address.toLowerCase() === address.toLocaleLowerCase());
+    return result;
+  }
+  public getSignatureServiceAddress(address: string): string {
+    const result = _.find(this.walletSecrets, (wallet) => wallet.address.toLowerCase() === address.toLocaleLowerCase());
+    if (!result) {
+      SystemOut.warn("⚠️ SignatureServiceAddress not found");
+      return "";
+    }
+    return result.signature_service_address;
+  }
+
+  public getSignatureServiceAddressByWalletName(walletName: string): string {
+    const result = _.find(this.walletSecrets, (wallet) => wallet.wallet_name.toLowerCase() === walletName.toLocaleLowerCase());
+    if (!result) {
+      SystemOut.warn("⚠️ SignatureServiceAddress not found");
+      return "";
+    }
+    return result.signature_service_address;
+  }
 
   getAddress = async (wallet_name: string) => {
-    console.log(wallet_name, this.walletSecrets)
     if (this.walletSecrets == null || this.walletSecrets == undefined || typeof this.walletSecrets === 'string') {
       throw new Error('state error, no wallet in chainclient')
     }
 
     let address: string | undefined = undefined
     this.walletSecrets.forEach((wallet) => {
-      if (wallet.type == 'key' || wallet.type == 'secret_vault') {
-        if (wallet.wallet_name == wallet_name) address = wallet.web3Wallet.address
-      } else if (wallet.type == 'vault') {
-        if (wallet.wallet_name == wallet_name) address = wallet.address
+      if (wallet.wallet_name == wallet_name) {
+        address = wallet.address
       }
     })
     return address
@@ -129,70 +113,41 @@ export default class Wallet {
 
     const balance_list: TokenBalance[] = []
 
-    // ⚠️  Warning: This area contains private keys
-    // console.log(JSON.stringify(this.walletSecrets))
-    try {
-      for (const wallet of this.walletSecrets) {
-        if (wallet.web3Wallet == undefined && wallet.type == 'secret_vault') {
-          wallet.private_key = await getKey(wallet.vault_name)
-        }
-      }
-    } catch (e) {
-      SystemOut.error("sync balance error");
-      SystemOut.warn("Restart in 30 seconds")
-      await new Promise((resolve) => { setTimeout(() => { resolve(true) }, 1000 * 30) })
-      process.exit()
-    }
-
-
     this.walletSecrets.forEach((wallet) => {
       if (!wallet.type) {
         console.warn('type field cannot be empty')
         return
-      }
-      if (wallet.web3Wallet == undefined && wallet.type == 'key') {
-        wallet.web3Wallet = new ethers.Wallet(wallet.private_key)
-      }
-
-      if (wallet.web3Wallet == undefined && wallet.type == 'secret_vault') {
-        wallet.web3Wallet = new ethers.Wallet(wallet.private_key)
       }
 
       wallet.token_list.forEach((token) => {
         balance_list.push({
           wallet_name: wallet.wallet_name,
           token,
-          wallet_address:
-            wallet.type == 'key' || wallet.type == 'secret_vault'
-              ? wallet.web3Wallet.address
-              : wallet.type == 'vault'
-                ? wallet.address
-                : '',
+          wallet_address: wallet.address,
           decimals: undefined,
           balance_value: undefined,
         })
       })
     })
-
-    let startCount = 0
-    let endCount = 0
-    balance_list.forEach(async (balance) => {
+    // console.log(balance_list)
+    for (const balance of balance_list) {
       if (this.provider == undefined) throw new Error('state error provider undefined')
       if (this.tokenMap == undefined) throw new Error('state error tokenMap undefined')
       if (this.evmConfig == undefined) throw new Error('state error evmConfig undefined')
 
       if (balance.token == ethers.constants.AddressZero) {
+        SystemOut.info('fetch native balance ', 'wallet:', balance.wallet_address, 'token:', balance.token)
         balance.balance_value = await this.provider.getBalance(balance.wallet_address)
         balance.decimals = 18
       } else {
         if (this.tokenMap[balance.token] == undefined) {
-          console.log('token_id', balance.token)
+          SystemOut.debug('token_id', balance.token)
           this.tokenMap[balance.token] = new ethers.Contract(balance.token, this.evmConfig.abi.erc20, this.provider)
         }
 
-        startCount++
         try {
-          SystemOut.debug('fetch', 'wallet:', balance.wallet_address, 'token:', balance.token)
+          SystemOut.info('fetch balance ', 'wallet:', balance.wallet_address, 'token:', balance.token)
+          // console.log(this.tokenMap);
           balance.balance_value = await this.tokenMap[balance.token].balanceOf(balance.wallet_address)
           if (balance.decimals == undefined) {
             balance.decimals = await this.tokenMap[balance.token].decimals()
@@ -202,72 +157,96 @@ export default class Wallet {
           console.error('fetch balance error')
           console.error(error)
         }
-
-        endCount++
       }
-    })
-
-    while (endCount < startCount) {
-      await sleep(100)
     }
-
     this.wallet_info = balance_list
   }
 
-  signMessage712 = async (signData: any, wallet_name: string) => {
-    if (this.walletSecrets == null || this.walletSecrets == undefined || typeof this.walletSecrets === 'string') {
-      throw new Error('state error, no wallet in chainclient')
+  private getSignBaseData(signData: any): ISignBase {
+    const domain = {
+      name: 'OtmoicSwap',
+      version: '1',
+      chainId: parseInt(this.evmConfig.chain_id),
     }
-
-    let signed = undefined
-    for (const wallet of this.walletSecrets) {
-      if (wallet.can_sign_712 && (wallet.type == 'key' || wallet.type == 'secret_vault')) {
-        const domain = {
-          name: 'OtmoicSwap',
-          version: '1',
-          chainId: this.evmConfig.chain_id,
-        }
-
-        const typedData = {
-          types: {
-            Message: [
-              { name: 'src_chain_id', type: 'uint256' },
-              { name: 'src_address', type: 'string' },
-              { name: 'src_token', type: 'string' },
-              { name: 'src_amount', type: 'string' },
-              { name: 'dst_chain_id', type: 'uint256' },
-              { name: 'dst_address', type: 'string' },
-              { name: 'dst_token', type: 'string' },
-              { name: 'dst_amount', type: 'string' },
-              { name: 'dst_native_amount', type: 'string' },
-              { name: 'requestor', type: 'string' },
-              { name: 'lp_id', type: 'string' },
-              { name: 'step_time_lock', type: 'uint256' },
-              { name: 'agreement_reached_time', type: 'uint256' },
-            ],
-          },
-          primaryType: 'Message',
-          domain,
-          message: signData,
-        }
-
-        signed = await wallet.web3Wallet._signTypedData(domain, typedData.types, signData)
-      }
+    const typedData = {
+      types: {
+        Message: [
+          { name: 'src_chain_id', type: 'uint256' },
+          { name: 'src_address', type: 'string' },
+          { name: 'src_token', type: 'string' },
+          { name: 'src_amount', type: 'string' },
+          { name: 'dst_chain_id', type: 'uint256' },
+          { name: 'dst_address', type: 'string' },
+          { name: 'dst_token', type: 'string' },
+          { name: 'dst_amount', type: 'string' },
+          { name: 'dst_native_amount', type: 'string' },
+          { name: 'requestor', type: 'string' },
+          { name: 'lp_id', type: 'string' },
+          { name: 'agreement_reached_time', type: 'uint256' },
+          { name: 'expected_single_step_time', type: 'uint256' },
+          { name: 'tolerant_single_step_time', type: 'uint256' },
+          { name: 'earliest_refund_time', type: 'uint256' },
+        ],
+      },
+      primaryType: 'Message',
+      domain,
+      message: signData,
     }
+    return {
+      domain,
+      typedData
+    }
+  }
+  signMessage712 = async (signData: any, walletName: string): Promise<string> => {
+    const walletItem = this.getWalletItemByWalletName(walletName)
+    let signed = ""
+    const { domain, typedData } = this.getSignBaseData(signData);
+    try {
+      SystemOut.info("domain", domain)
+      SystemOut.info("types", typedData.types)
+      SystemOut.info("signData", signData)
+      SystemOut.info("address", walletItem.address)
+      signed = await this.getSignFromSignService(walletItem, { domain, typedData }, signData)
+      SystemOut.info("signed  data is:", signed, domain)
+      SystemOut.info("domain", domain)
+    } catch (e) {
+      SystemOut.info("The signature has an error")
+      SystemOut.error(e)
+    }
+    return signed;
+  }
 
-    return signed
+  private async getSignFromSignService(walletItem: WalletConfig, baseData: ISignBase, signData: any): Promise<string> {
+    let signStr = ""
+    try {
+      const url = `${walletItem.signature_service_address}/lp/${Config.evm_config.system_chain_id}/signEIP712`
+      const signResponse = await axios.post(url, {
+        domain: baseData.domain,
+        types: baseData.typedData.types,
+        signData: signData
+      })
+      const responseData = _.get(signResponse, "data.signature", "")
+      console.log("signed is:", responseData)
+      signStr = responseData
+    } catch (e) {
+      SystemOut.error(e)
+      throw e;
+    }
+    return signStr
   }
 
   getStatus = async () => {
     return this.wallet_info
   }
-
+  /**
+   * By default, relay uses the first wallet
+   * @returns 
+   */
   getRelayAddress = async () => {
+    console.log("getRelayAddress:", this.walletSecrets);
     if (this.walletSecrets[0] == undefined) {
       throw new Error('no secret')
-    } else {
-      console.log(JSON.stringify(this.walletSecrets[0] as any))
-      return (this.walletSecrets[0] as any).web3Wallet.address
     }
+    return this.walletSecrets[0].address
   }
 }

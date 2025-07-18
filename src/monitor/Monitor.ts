@@ -61,6 +61,9 @@ export default class Monitor {
     public setId(id: string) {
         this.id = id;
     }
+    public setEvmConfig(evmConfig: EvmConfig) {
+        this.evmConfig = evmConfig;
+    }
     public setStartTime(time: number) {
         this.startTime = time;
     }
@@ -159,7 +162,7 @@ export default class Monitor {
     historyModeStart = () => {
         if (this.modeHistory && this.blockEventFetcher != undefined) {
             this.blockEventFetcher.startFetch();
-            SystemOut.debug("----> historyModeStart");
+            SystemOut.info("----> historyModeStart");
         }
     };
     update_height = async (height: number, filterId: string) => {
